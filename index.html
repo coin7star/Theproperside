@@ -76,11 +76,9 @@
 
         async function getConfig() {
             try {
-                // Mencoba fetch dari API backend
                 const res = await fetch('/api/config');
                 return await res.json();
             } catch (err) {
-                // Fallback: Jika di lingkungan Canvas (lokal), kembalikan null untuk indikasi error
                 console.warn("API backend tidak ditemukan, menggunakan simulasi.");
                 return null;
             }
@@ -109,7 +107,13 @@
 
         async function loginGoogle() {
             if (!window.myAppSupabase) return;
-            await window.myAppSupabase.auth.signInWithOAuth({ provider: 'google' });
+            // Menambahkan redirectTo agar Supabase tahu ke mana harus kembali
+            await window.myAppSupabase.auth.signInWithOAuth({ 
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
         }
 
         async function logout() {
@@ -136,7 +140,7 @@
                     handleAuthState(session);
                     window.myAppSupabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
                 } else {
-                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500'>Konfigurasi Supabase tidak ditemukan (Backend API tidak aktif).</p>";
+                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500'>Konfigurasi Supabase tidak ditemukan.</p>";
                     return;
                 }
 
