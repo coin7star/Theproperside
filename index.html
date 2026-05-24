@@ -61,29 +61,95 @@
     </footer>
 
     <script>
-        let supabase = null;
+        window.myAppSupabase = null;
         let currentUser = null;
+
+        async function waitForSupabase() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.supabase && window.supabase.createClient) resolve();
+                    else setTimeout(check, 100);
+                };
+                check();
+            });
+        }
+
+        async function getConfig() {
+            try {
+                // Mencoba fetch dari API backend
+                const res = await fetch('/api/config');
+                return await res.json();
+            } catch (err) {
+                // Fallback: Jika di lingkungan Canvas (lokal), kembalikan null untuk indikasi error
+                console.warn("API backend tidak ditemukan, menggunakan simulasi.");
+                return null;
+            }
+        }
+
+        function handleAuthState(session) {
+            currentUser = session?.user;
+            const loginBtn = document.getElementById('login-btn');
+            const userProfile = document.getElementById('user-profile');
+            const userInput = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            if (currentUser) {
+                loginBtn.classList.add('hidden');
+                userProfile.classList.remove('hidden');
+                document.getElementById('user-avatar').src = currentUser.user_metadata?.avatar_url || '';
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+            } else {
+                loginBtn.classList.remove('hidden');
+                userProfile.classList.add('hidden');
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+            }
+        }
+
+        async function loginGoogle() {
+            if (!window.myAppSupabase) return;
+            await window.myAppSupabase.auth.signInWithOAuth({ provider: 'google' });
+        }
+
+        async function logout() {
+            if (!window.myAppSupabase) return;
+            await window.myAppSupabase.auth.signOut();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if(!text) return;
+            input.value = '';
+        }
 
         async function initApp() {
             try {
-                const res = await fetch('/api/config');
-                const config = await res.json();
-                supabase = window.supabase.createClient(config.url, config.anonKey);
+                await waitForSupabase();
+                const config = await getConfig();
                 
-                const { data: { session } } = await supabase.auth.getSession();
-                handleAuthState(session);
-                supabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
+                if (config && config.url && config.anonKey) {
+                    window.myAppSupabase = window.supabase.createClient(config.url, config.anonKey);
+                    
+                    const { data: { session } } = await window.myAppSupabase.auth.getSession();
+                    handleAuthState(session);
+                    window.myAppSupabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
+                } else {
+                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500'>Konfigurasi Supabase tidak ditemukan (Backend API tidak aktif).</p>";
+                    return;
+                }
 
                 document.getElementById('initial-loader').style.display = 'none';
                 document.getElementById('main-header').classList.remove('opacity-0');
                 document.getElementById('chat-container').classList.remove('opacity-0');
                 document.getElementById('main-footer').classList.remove('opacity-0');
             } catch (err) {
-                console.error("Error:", err);
+                console.error("Error Inisialisasi:", err);
+                document.getElementById('initial-loader').innerText = "Gagal memuat: " + err.message;
             }
         }
-
-        // ... (Fungsi sendMessage, appendMessage, dll sama seperti kode sebelumnya) ...
+        
         initApp();
     </script>
 </body>
