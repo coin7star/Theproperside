@@ -97,8 +97,6 @@
 
         async function loginGoogle() {
             if (!window.myAppSupabase) return;
-            // Pastikan URL di Supabase Dashboard (Auth > URL Configuration) 
-            // sudah sesuai dengan alamat Vercel Anda.
             await window.myAppSupabase.auth.signInWithOAuth({ 
                 provider: 'google',
                 options: {
@@ -123,19 +121,18 @@
             try {
                 await waitForSupabase();
                 
-                // --- PENTING: GANTI DENGAN KUNCI SUPABASE ASLI ANDA ---
-                // Anda bisa mendapatkan ini di Supabase Dashboard > Project Settings > API
+                // --- PENTING: GANTI BARIS DI BAWAH DENGAN DATA DARI SUPABASE DASHBOARD ---
                 const supabaseUrl = "https://mjvgnxiudhnuaccxnsnh.supabase.co"; 
                 const supabaseAnonKey = "sb_publishable_-zoS7TeFgb9QZkhnuZe28A_jnj1Xno6";
                 
-                if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("xxxxxx")) {
+                if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("MASUKKAN")) {
                     window.myAppSupabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
                     
                     const { data: { session } } = await window.myAppSupabase.auth.getSession();
                     handleAuthState(session);
                     window.myAppSupabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
                 } else {
-                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500 text-center px-4'>Konfigurasi Supabase salah. Pastikan Anda sudah mengganti URL dan Anon Key di kode.</p>";
+                    document.getElementById('initial-loader').innerHTML = "<div class='text-center px-6'><p class='text-red-500 font-bold mb-2'>Konfigurasi Belum Diatur!</p><p class='text-sm text-gray-600'>Buka file index.html dan ganti MASUKKAN_URL_SUPABASE_ANDA_DI_SINI dan MASUKKAN_ANON_KEY_SUPABASE_ANDA_DI_SINI dengan kunci asli dari Supabase Dashboard Anda.</p></div>";
                     return;
                 }
 
