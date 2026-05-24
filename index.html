@@ -97,6 +97,8 @@
 
         async function loginGoogle() {
             if (!window.myAppSupabase) return;
+            // Pastikan URL di Supabase Dashboard (Auth > URL Configuration) 
+            // sudah sesuai dengan alamat Vercel Anda.
             await window.myAppSupabase.auth.signInWithOAuth({ 
                 provider: 'google',
                 options: {
@@ -121,18 +123,19 @@
             try {
                 await waitForSupabase();
                 
-                // Konfigurasi Supabase - Ganti dengan URL dan Key asli Anda
-                const supabaseUrl = "https://mjvgnxiudhnuaccxnsnh.supabase.co";
+                // --- PENTING: GANTI DENGAN KUNCI SUPABASE ASLI ANDA ---
+                // Anda bisa mendapatkan ini di Supabase Dashboard > Project Settings > API
+                const supabaseUrl = "https://mjvgnxiudhnuaccxnsnh.supabase.co"; 
                 const supabaseAnonKey = "sb_publishable_-zoS7TeFgb9QZkhnuZe28A_jnj1Xno6";
                 
-                if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("ISI_")) {
+                if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("xxxxxx")) {
                     window.myAppSupabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
                     
                     const { data: { session } } = await window.myAppSupabase.auth.getSession();
                     handleAuthState(session);
                     window.myAppSupabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
                 } else {
-                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500 text-center px-4'>Konfigurasi Supabase belum diatur. Silakan periksa file index.html.</p>";
+                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500 text-center px-4'>Konfigurasi Supabase salah. Pastikan Anda sudah mengganti URL dan Anon Key di kode.</p>";
                     return;
                 }
 
