@@ -115,14 +115,33 @@
 
         async function sendMessage() {
             const input = document.getElementById('user-input');
+            const modelSelector = document.getElementById('model-selector');
             const text = input.value.trim();
             if(!text) return;
             
             appendMessage(text, true);
             input.value = '';
-            
-            // Simulasi respon AI (hubungkan ke api/chat.js nanti)
-            appendMessage("Terima kasih telah mengirim pesan! Fitur AI akan segera terhubung.", false);
+            input.disabled = true;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, modelProvider: modelSelector.value })
+                });
+
+                const data = await response.json();
+                if (data.reply) {
+                    appendMessage(data.reply, false);
+                } else {
+                    appendMessage("Error: " + (data.error || "Terjadi kesalahan."), false);
+                }
+            } catch (err) {
+                appendMessage("Gagal terhubung ke server AI: " + err.message, false);
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
         }
 
         async function initApp() {
