@@ -23,10 +23,10 @@
         .msg-user { align-self: flex-end; background-color: #4f46e5; color: white; }
         .msg-ai { align-self: flex-start; background-color: #f3f4f6; color: #1f2937; }
         
-        /* Code Block Styling - Diperbarui agar scroll muncul */
-        pre { background: #282c34; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin: 0.5rem 0; position: relative; display: block; }
-        code { font-family: 'Fira Code', 'Courier New', monospace; font-size: 0.875rem; color: #abb2bf; display: block; overflow-x: auto; white-space: pre; }
-        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; z-index: 10; }
+        /* Perbaikan Code Block */
+        pre { background: #282c34; border-radius: 0.5rem; padding: 1rem; margin: 0.5rem 0; position: relative; overflow-x: auto; }
+        code { font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.875rem; color: #abb2bf; display: block; }
+        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; z-index: 20; }
         .copy-btn:hover { background: #374151; }
         
         #initial-loader { position: fixed; inset: 0; background: white; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -79,10 +79,12 @@
         }
 
         function copyToClipboard(btn) {
-            const code = btn.nextElementSibling.innerText;
+            const codeBlock = btn.nextElementSibling;
+            const code = codeBlock.innerText;
             navigator.clipboard.writeText(code);
+            const originalText = btn.innerText;
             btn.innerText = 'Tersalin!';
-            setTimeout(() => btn.innerText = 'Salin', 2000);
+            setTimeout(() => btn.innerText = originalText, 2000);
         }
 
         function appendMessage(text, isUser) {
@@ -92,7 +94,8 @@
             
             const renderer = new marked.Renderer();
             renderer.code = (code, lang) => {
-                return `<pre><button class="copy-btn" onclick="copyToClipboard(this)">Salin</button><code>${code}</code></pre>`;
+                const escapedCode = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return `<pre><button class="copy-btn" onclick="copyToClipboard(this)">Salin</button><code>${escapedCode}</code></pre>`;
             };
             
             div.innerHTML = DOMPurify.sanitize(marked.parse(text, { renderer }));
