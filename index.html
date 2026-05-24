@@ -74,16 +74,6 @@
             });
         }
 
-        async function getConfig() {
-            try {
-                const res = await fetch('/api/config');
-                return await res.json();
-            } catch (err) {
-                console.warn("API backend tidak ditemukan, menggunakan simulasi.");
-                return null;
-            }
-        }
-
         function handleAuthState(session) {
             currentUser = session?.user;
             const loginBtn = document.getElementById('login-btn');
@@ -107,7 +97,6 @@
 
         async function loginGoogle() {
             if (!window.myAppSupabase) return;
-            // Menambahkan redirectTo agar Supabase tahu ke mana harus kembali
             await window.myAppSupabase.auth.signInWithOAuth({ 
                 provider: 'google',
                 options: {
@@ -131,16 +120,19 @@
         async function initApp() {
             try {
                 await waitForSupabase();
-                const config = await getConfig();
                 
-                if (config && config.url && config.anonKey) {
-                    window.myAppSupabase = window.supabase.createClient(config.url, config.anonKey);
+                // Konfigurasi Supabase - Ganti dengan URL dan Key asli Anda
+                const supabaseUrl = "https://mjvgnxiudhnuaccxnsnh.supabase.co";
+                const supabaseAnonKey = "sb_publishable_-zoS7TeFgb9QZkhnuZe28A_jnj1Xno6";
+                
+                if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("ISI_")) {
+                    window.myAppSupabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
                     
                     const { data: { session } } = await window.myAppSupabase.auth.getSession();
                     handleAuthState(session);
                     window.myAppSupabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
                 } else {
-                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500'>Konfigurasi Supabase tidak ditemukan.</p>";
+                    document.getElementById('initial-loader').innerHTML = "<p class='text-red-500 text-center px-4'>Konfigurasi Supabase belum diatur. Silakan periksa file index.html.</p>";
                     return;
                 }
 
