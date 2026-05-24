@@ -3,16 +3,15 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Metode tidak diizinkan. Gunakan POST.' });
     }
 
-    // Sekarang kita menerima text dan modelProvider (gemini/groq) dari frontend
     const { text, modelProvider } = req.body;
     const systemPrompt = "Anda adalah asisten AI yang ramah, pintar, dan sangat membantu. Gunakan bahasa Indonesia yang baik dan mudah dipahami.";
 
     try {
         if (modelProvider === 'groq') {
             // ==========================================
-            // LOGIKA UNTUK GROQ API (LLAMA 3)
+            // LOGIKA UNTUK GROQ API (LLAMA 3.1)
             // ==========================================
-            const groqApiKey = process.env.GROQ_API_KEY; // Harus ditambahkan di Vercel ENV
+            const groqApiKey = process.env.GROQ_API_KEY; 
             
             if (!groqApiKey) {
                 return res.status(500).json({ error: 'GROQ_API_KEY belum disetting di Vercel.' });
@@ -25,7 +24,8 @@ export default async function handler(req, res) {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "llama3-8b-8192", // Model dari Groq yang sangat cepat
+                    // PERBAIKAN: Menggunakan model Llama terbaru dari Groq yang aktif
+                    model: "llama-3.1-8b-instant", 
                     messages: [
                         { role: "system", content: systemPrompt },
                         { role: "user", content: text }
@@ -36,7 +36,6 @@ export default async function handler(req, res) {
             const data = await response.json();
             if (!response.ok) throw new Error(`Groq API Error: ${data.error?.message || 'Unknown Error'}`);
             
-            // Kembalikan hasil dalam format standar
             return res.status(200).json({ reply: data.choices[0].message.content });
 
         } else {
@@ -62,7 +61,6 @@ export default async function handler(req, res) {
             const data = await response.json();
             if (!response.ok) throw new Error(`Google API Error: ${data.error?.message || 'Unknown Error'}`);
             
-            // Kembalikan hasil dalam format standar
             return res.status(200).json({ reply: data.candidates[0].content.parts[0].text });
         }
 
