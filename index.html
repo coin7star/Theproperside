@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="Asisten AI pintar dengan fitur multi-model (Gemini & Groq Llama 3) yang responsif dan cepat.">
+    <meta name="description" content="Asisten AI pintar dengan fitur multi-model (Gemini & Groq Llama 3) yang responsif, SEO friendly, dan cepat.">
     <meta name="theme-color" content="#4f46e5">
+    <link rel="canonical" href="https://theproperside.vercel.app">
     
-    <title>Asisten AI Multi-Model & Supabase</title>
+    <title>Asisten AI Multi-Model - Chat Pintar & Cepat</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -18,16 +19,23 @@
     
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .chat-msg { max-width: 85%; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 1rem; line-height: 1.5; }
+        .chat-msg { max-width: 90%; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 1rem; line-height: 1.6; }
         .msg-user { align-self: flex-end; background-color: #4f46e5; color: white; }
-        .msg-ai { align-self: flex-start; background-color: #e5e7eb; color: #1f2937; }
+        .msg-ai { align-self: flex-start; background-color: #f3f4f6; color: #1f2937; }
+        
+        /* Code Block Styling */
+        pre { background: #282c34; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin: 0.5rem 0; position: relative; }
+        code { font-family: 'Fira Code', monospace; font-size: 0.875rem; color: #abb2bf; }
+        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; }
+        .copy-btn:hover { background: #374151; }
+        
         #initial-loader { position: fixed; inset: 0; background: white; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
 
     <div id="initial-loader">
-        <p class="text-sm text-gray-500">Menyiapkan koneksi aman...</p>
+        <p class="text-sm text-gray-500">Menyiapkan asisten AI Anda...</p>
     </div>
 
     <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0 opacity-0 transition-opacity duration-500" id="main-header">
@@ -38,10 +46,10 @@
                     <option value="gemini">Gemini 3.1</option>
                     <option value="groq">Groq (Llama 3)</option>
                 </select>
-                <button id="login-btn" onclick="loginGoogle()" class="hidden bg-blue-600 text-white text-xs py-1.5 px-3 rounded-lg">Login</button>
+                <button id="login-btn" onclick="loginGoogle()" class="hidden bg-blue-600 text-white text-xs py-1.5 px-3 rounded-lg hover:bg-blue-700 transition">Login</button>
                 <div id="user-profile" class="hidden items-center gap-2">
                     <img id="user-avatar" src="" class="w-8 h-8 rounded-full border shadow-sm">
-                    <button onclick="logout()" class="text-gray-400">Logout</button>
+                    <button onclick="logout()" class="text-gray-400 text-xs hover:text-red-500">Logout</button>
                 </div>
             </div>
         </div>
@@ -51,8 +59,8 @@
 
     <footer id="main-footer" class="bg-white border-t p-3 pb-6 flex-shrink-0 opacity-0 transition-opacity duration-500">
         <div class="max-w-5xl mx-auto relative flex items-end gap-2">
-            <textarea id="user-input" disabled class="w-full bg-gray-50 border border-gray-300 text-sm rounded-2xl p-4 pr-12 outline-none disabled:opacity-60" placeholder="Ketik pesan Anda..."></textarea>
-            <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-3 bottom-3 p-2 bg-indigo-600 text-white rounded-full shadow-md">Kirim</button>
+            <textarea id="user-input" disabled class="w-full bg-gray-50 border border-gray-300 text-sm rounded-2xl p-4 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60" placeholder="Ketik pesan Anda..."></textarea>
+            <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-3 bottom-3 p-2 bg-indigo-600 text-white rounded-full shadow-md hover:bg-indigo-700 transition">Kirim</button>
         </div>
     </footer>
 
@@ -70,13 +78,28 @@
             });
         }
 
+        function copyToClipboard(btn) {
+            const code = btn.nextElementSibling.innerText;
+            navigator.clipboard.writeText(code);
+            btn.innerText = 'Tersalin!';
+            setTimeout(() => btn.innerText = 'Salin', 2000);
+        }
+
         function appendMessage(text, isUser) {
             const container = document.getElementById('chat-container');
             const div = document.createElement('div');
             div.className = `chat-msg ${isUser ? 'msg-user' : 'msg-ai'}`;
-            div.innerHTML = DOMPurify.sanitize(marked.parse(text));
+            
+            // Konfigurasi Marked agar menghasilkan tombol salin
+            const renderer = new marked.Renderer();
+            renderer.code = (code, lang) => {
+                return `<pre><button class="copy-btn" onclick="copyToClipboard(this)">Salin</button><code>${code}</code></pre>`;
+            };
+            
+            div.innerHTML = DOMPurify.sanitize(marked.parse(text, { renderer }));
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
+            hljs.highlightAll();
         }
 
         function handleAuthState(session) {
