@@ -68,8 +68,16 @@
             margin: 0; 
             padding: 1rem; 
             overflow-x: auto; 
+            overflow-y: auto; /* Menambahkan scroll vertikal */
+            max-height: 400px; /* Membatasi tinggi maksimal kotak kode */
             font-size: 0.875rem;
             line-height: 1.5;
+            color: #abb2bf; /* PERBAIKAN: Memaksa teks di dalam blok kode menjadi warna terang */
+        }
+
+        .markdown-body pre code {
+            color: inherit;
+            background-color: transparent;
         }
         
         /* Tombol Copy */
