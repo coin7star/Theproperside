@@ -1,14 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="Asisten AI pintar dengan fitur multi-model (Gemini & Groq Llama 3) yang responsif, SEO friendly, dan cepat.">
+    <meta name="description" content="Workspace pintar dengan berbagai aplikasi mini termasuk Asisten AI multi-model dan Temp Email.">
     <meta name="theme-color" content="#4f46e5">
-    <link rel="canonical" href="https://theproperside.vercel.app">
-    
-    <title>Asisten AI Multi-Model - Chat Pintar & Cepat</title>
+    <title>Workspace App - Dashboard</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -20,6 +17,8 @@
     
     <style>
         body { font-family: 'Inter', sans-serif; }
+        
+        /* CSS Obrolan Chat */
         .chat-msg { max-width: 90%; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 1rem; line-height: 1.6; }
         .msg-user { align-self: flex-end; background-color: #4f46e5; color: white; border-bottom-right-radius: 0.25rem; }
         .msg-ai { align-self: flex-start; background-color: #ffffff; color: #1f2937; border-bottom-left-radius: 0.25rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05);}
@@ -37,112 +36,237 @@
         pre::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         pre::-webkit-scrollbar-thumb:hover { background: #6b7280; }
         
-        /* Scrollbar kustom untuk sidebar */
+        /* Scrollbar kustom umum */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: #94a3b8; }
         
         textarea::-webkit-scrollbar { width: 0px; background: transparent; }
-        #initial-loader { position: fixed; inset: 0; background: white; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #initial-loader { position: fixed; inset: 0; background: white; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* Animasi Transisi Halaman */
+        .page-transition { transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; }
     </style>
 </head>
-<body class="flex h-[100dvh] bg-gray-50 overflow-hidden font-sans">
+<body class="flex flex-col h-[100dvh] bg-gray-50 overflow-hidden font-sans">
 
+    <!-- Loader Awal -->
     <div id="initial-loader">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
-        <p class="text-sm text-gray-500">Menyiapkan asisten AI Anda...</p>
+        <p class="text-sm text-gray-500 font-medium">Memuat Workspace...</p>
     </div>
 
-    <!-- Overlay Latar Belakang Sidebar (Mode HP) -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
-
-    <!-- Sidebar Kiri: History Chat -->
-    <aside id="sidebar" class="w-72 bg-gray-900 text-gray-300 flex flex-col shrink-0 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 border-r border-gray-800">
-        <div class="p-4 flex items-center justify-between border-b border-gray-800 shrink-0 h-[69px]">
-            <h2 class="font-bold text-lg text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-                Riwayat Chat
-            </h2>
-            <button class="md:hidden text-gray-400 hover:text-white focus:outline-none" onclick="toggleSidebar()">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <!-- HEADER GLOBAL (Navigasi Atas) -->
+    <header class="bg-white border-b border-gray-200 shadow-sm z-50 flex-shrink-0 h-[64px] flex items-center justify-between px-4 sm:px-6 relative">
+        <div class="flex items-center gap-3">
+            <button id="btn-back-home" onclick="openPage('page-home')" class="hidden p-2 -ml-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors focus:outline-none">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </button>
+            <h1 id="header-title" class="font-bold text-lg sm:text-xl text-indigo-700 tracking-tight">TheProperSide <span class="text-gray-400 font-normal hidden sm:inline">| Workspace</span></h1>
         </div>
         
-        <div class="p-3 shrink-0">
-            <button onclick="handleNewChatClick()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-xl transition shadow-sm">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                Chat Baru
-            </button>
+        <div class="flex items-center gap-3">
+            <button id="login-btn" onclick="loginGoogle()" class="hidden bg-indigo-600 text-white text-sm font-medium py-2 px-5 rounded-lg hover:bg-indigo-700 transition shadow-sm">Login</button>
+            <div id="user-profile" class="hidden items-center gap-3 bg-gray-50 py-1.5 px-3 rounded-full border border-gray-200 shadow-sm cursor-pointer hover:bg-gray-100 transition" onclick="toggleDropdown()">
+                <img id="user-avatar" src="" alt="Avatar" class="w-7 h-7 rounded-full object-cover border border-gray-300">
+                <span id="user-name" class="text-sm font-medium text-gray-700 hidden sm:block truncate max-w-[120px]">User</span>
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+            
+            <div id="user-dropdown" class="hidden absolute right-4 sm:right-6 top-[60px] bg-white border border-gray-200 rounded-xl shadow-lg w-48 py-2 z-50">
+                <div class="px-4 py-2 border-b border-gray-100 mb-1">
+                    <p class="text-xs text-gray-500">Masuk sebagai</p>
+                    <p id="dropdown-email" class="text-sm font-medium text-gray-800 truncate">email@domain.com</p>
+                </div>
+                <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Keluar / Logout
+                </button>
+            </div>
         </div>
+    </header>
+
+    <!-- AREA HALAMAN / KONTEN UTAMA -->
+    <div class="flex-1 relative w-full h-full overflow-hidden">
         
-        <!-- Daftar History -->
-        <div id="chat-list" class="flex-1 overflow-y-auto p-3 pt-0 space-y-1 custom-scrollbar">
-            <!-- Daftar Obrolan Akan Muncul Di Sini -->
+        <!-- ========================================== -->
+        <!-- HALAMAN 1: BERANDA / DASHBOARD (HOME PAGE) -->
+        <!-- ========================================== -->
+        <div id="page-home" class="page-transition absolute inset-0 w-full h-full bg-slate-50 overflow-y-auto custom-scrollbar">
+            <!-- Hero Banner -->
+            <div class="bg-indigo-700 text-white pt-12 pb-16 px-6 sm:px-10 text-center relative overflow-hidden">
+                <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==')]"></div>
+                <h2 class="text-3xl sm:text-4xl font-bold mb-3 relative z-10">Selamat Datang di Workspace!</h2>
+                <p class="text-indigo-200 text-lg max-w-xl mx-auto relative z-10">Pilih aplikasi dan *tools* cerdas untuk mempermudah pekerjaan Anda hari ini.</p>
+            </div>
+            
+            <!-- Grid Aplikasi -->
+            <div class="max-w-5xl mx-auto px-6 py-10 -mt-10 relative z-20">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Kartu App: AI Chat -->
+                    <div onclick="openPage('page-chat')" class="bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full">
+                        <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-5 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-800 mb-2">Multi AI Chat</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6 flex-1">Ngobrol dengan AI canggih (Gemini & Groq) untuk coding, menulis artikel, atau bertanya apa saja.</p>
+                        <div class="flex items-center text-indigo-600 text-sm font-semibold mt-auto">
+                            Buka Aplikasi <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </div>
+                    </div>
+
+                    <!-- Kartu App: Temp Email (Baru) -->
+                    <div onclick="openPage('page-email')" class="bg-white rounded-2xl p-6 border border-gray-200 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full">
+                        <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-800 mb-2">Temp Email</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6 flex-1">Buat email sementara sekali pakai untuk mendaftar akun tanpa takut kotak masuk utama Anda dipenuhi spam.</p>
+                        <div class="flex items-center text-emerald-600 text-sm font-semibold mt-auto">
+                            Buka Alat <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </div>
+                    </div>
+
+                    <!-- Kartu App: Kalkulator Unik (Placeholder) -->
+                    <div class="bg-white/60 rounded-2xl p-6 border border-gray-200 border-dashed relative overflow-hidden group flex flex-col h-full">
+                        <div class="absolute top-4 right-4 bg-gray-200 text-gray-600 text-xs font-bold px-2 py-1 rounded-md">Segera Hadir</div>
+                        <div class="w-14 h-14 bg-gray-100 text-gray-400 rounded-xl flex items-center justify-center mb-5">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-500 mb-2">Kalkulator Pintar</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed flex-1">Aplikasi utilitas perhitungan unik untuk kebutuhan Anda.</p>
+                    </div>
+
+                </div>
+            </div>
         </div>
 
-        <!-- Banner peringatan untuk Guest Mode di Sidebar -->
-        <div id="guest-sidebar-warning" class="hidden p-4 border-t border-gray-800 bg-gray-800/50 shrink-0">
-            <p class="text-xs text-gray-400 text-center leading-relaxed">
-                Anda menggunakan <span class="font-semibold text-gray-300">Mode Tamu</span>. <br>
-                Riwayat obrolan tidak akan tersimpan jika Anda memuat ulang (refresh) halaman.
-            </p>
-            <button onclick="loginGoogle()" class="w-full mt-3 text-sm bg-gray-700 hover:bg-gray-600 text-white py-1.5 rounded-lg transition border border-gray-600">
-                Login untuk Menyimpan
-            </button>
-        </div>
-    </aside>
+        <!-- ========================================== -->
+        <!-- HALAMAN 2: MULTI AI CHAT (CHAT PAGE)       -->
+        <!-- ========================================== -->
+        <div id="page-chat" class="page-transition absolute inset-0 w-full h-full bg-white flex opacity-0 pointer-events-none translate-x-10">
+            <!-- (Sama dengan versi sebelumnya) -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
-    <!-- Area Konten Utama Kanan -->
-    <div class="flex-1 flex flex-col min-w-0 h-[100dvh] relative bg-gray-50">
-        
-        <!-- Header Atas -->
-        <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0 transition-opacity duration-500 h-[69px]" id="main-header">
-            <div class="h-full px-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <button class="md:hidden text-gray-600 hover:text-indigo-600 focus:outline-none" onclick="toggleSidebar()">
+            <aside id="sidebar" class="w-72 bg-gray-900 text-gray-300 flex flex-col shrink-0 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 border-r border-gray-800">
+                <div class="p-4 flex items-center justify-between border-b border-gray-800 shrink-0">
+                    <h2 class="font-bold text-base text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Riwayat Chat
+                    </h2>
+                    <button class="md:hidden text-gray-400 hover:text-white" onclick="toggleSidebar()">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-3 shrink-0">
+                    <button onclick="handleNewChatClick()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 px-4 rounded-xl transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Chat Baru
+                    </button>
+                </div>
+                <div id="chat-list" class="flex-1 overflow-y-auto p-3 pt-0 space-y-1 custom-scrollbar"></div>
+                <div id="guest-sidebar-warning" class="hidden p-4 border-t border-gray-800 bg-gray-800/50 shrink-0">
+                    <p class="text-xs text-gray-400 text-center leading-relaxed">Anda menggunakan <span class="font-semibold text-gray-300">Mode Tamu</span>. <br>Riwayat tidak tersimpan permanen.</p>
+                </div>
+            </aside>
+
+            <div class="flex-1 flex flex-col min-w-0 h-full relative bg-gray-50">
+                <div class="bg-white border-b border-gray-200 h-[50px] shrink-0 flex justify-between items-center px-4">
+                    <button class="md:hidden text-gray-500 hover:text-indigo-600" onclick="toggleSidebar()">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
-                    <h1 class="font-bold text-lg text-indigo-600 hidden sm:block">Multi AI Chat</h1>
-                </div>
-                <div class="flex items-center gap-3">
-                    <select id="model-selector" class="bg-gray-50 border border-gray-300 text-xs rounded-lg p-2 cursor-pointer outline-none focus:ring-1 focus:ring-indigo-500">
+                    <div class="hidden md:flex items-center gap-2 text-sm text-gray-500 font-medium">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg> Asisten Pintar
+                    </div>
+                    <select id="model-selector" class="bg-gray-50 border border-gray-300 text-xs rounded-lg py-1.5 px-3 cursor-pointer outline-none focus:ring-1 focus:ring-indigo-500">
                         <option value="gemini">Gemini 1.5</option>
                         <option value="groq">Groq (Llama 3)</option>
                     </select>
-                    <button id="login-btn" onclick="loginGoogle()" class="hidden bg-indigo-600 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-indigo-700 transition shadow-sm">Login</button>
-                    <div id="user-profile" class="hidden items-center gap-3">
-                        <img id="user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-gray-200 shadow-sm object-cover">
-                        <button onclick="logout()" class="text-gray-500 text-xs hover:text-red-600 transition font-medium">Logout</button>
+                </div>
+                <main class="flex-1 overflow-y-auto w-full relative scroll-smooth custom-scrollbar">
+                    <div id="guest-chat-banner" class="hidden bg-yellow-50 border-b border-yellow-100 px-4 py-2 text-center shadow-sm">
+                        <p class="text-xs text-yellow-800"><span class="font-semibold">⚠️ Mode Tamu:</span> Anda bisa chatting, tapi riwayat tidak akan tersimpan permanen. <button onclick="loginGoogle()" class="underline font-medium hover:text-yellow-900 ml-1">Login sekarang</button>.</p>
+                    </div>
+                    <div id="chat-container" class="max-w-4xl mx-auto p-4 flex flex-col min-h-full pb-8"></div>
+                </main>
+                <footer class="bg-gray-50 p-3 pb-8 md:pb-6 flex-shrink-0 border-t border-gray-200 relative">
+                    <div class="max-w-4xl mx-auto relative flex items-end gap-2 bg-white border border-gray-300 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
+                        <textarea id="user-input" disabled rows="1" class="w-full bg-transparent text-sm p-4 pr-14 outline-none disabled:opacity-60 resize-none max-h-32 custom-scrollbar" placeholder="Menyiapkan chat..."></textarea>
+                        <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-10 w-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                        </button>
+                    </div>
+                </footer>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- HALAMAN 3: TEMP EMAIL (HALAMAN BARU)       -->
+        <!-- ========================================== -->
+        <div id="page-email" class="page-transition absolute inset-0 w-full h-full bg-slate-50 flex flex-col opacity-0 pointer-events-none translate-x-10 overflow-y-auto custom-scrollbar">
+            <div class="max-w-4xl mx-auto w-full p-4 sm:p-6 pb-20">
+                
+                <!-- Judul dan Info Temp Email -->
+                <div class="mb-6 text-center mt-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full mb-3">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">Email Sementara Anda</h2>
+                    <p class="text-gray-500 mt-2 text-sm sm:text-base max-w-lg mx-auto">Gunakan alamat di bawah ini untuk mendaftar akun atau menerima kode verifikasi tanpa memberikan email pribadi Anda.</p>
+                </div>
+
+                <!-- Box Alamat Email -->
+                <div class="bg-white rounded-2xl p-5 sm:p-8 border border-gray-200 shadow-sm mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Alamat Email Sekali Pakai:</label>
+                    <div class="flex flex-col sm:flex-row items-center gap-3">
+                        <div class="relative flex-1 w-full">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
+                            </div>
+                            <input type="text" id="temp-email-address" readonly value="menunggu_generate@domain.com" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-gray-50 text-gray-800 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors text-center sm:text-left">
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button id="btn-copy-email" onclick="copyTempEmail()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 px-5 rounded-xl transition shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                Salin
+                            </button>
+                            <button onclick="generateNewEmail()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 px-5 rounded-xl transition shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Baru
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </header>
 
-        <!-- Container Chat Obrolan -->
-        <main class="flex-1 overflow-y-auto w-full relative scroll-smooth bg-gray-50">
-            <!-- Banner notifikasi kecil di atas ruang chat saat Guest Mode -->
-            <div id="guest-chat-banner" class="hidden bg-yellow-50 border-b border-yellow-100 px-4 py-2 text-center shadow-sm">
-                <p class="text-xs text-yellow-800">
-                    <span class="font-semibold">⚠️ Mode Tamu:</span> Anda bisa chatting, tapi riwayat tidak akan tersimpan permanen. <button onclick="loginGoogle()" class="underline font-medium hover:text-yellow-900 ml-1">Login sekarang</button>.
-                </p>
-            </div>
-            
-            <div id="chat-container" class="max-w-4xl mx-auto p-4 flex flex-col min-h-full pb-8">
-                <!-- Chat Kosong / Welcome Message bisa ditaruh di sini melalui JS -->
-            </div>
-        </main>
+                <!-- Box Inbox (Kotak Masuk) -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                        <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            Kotak Masuk
+                        </h3>
+                        <button id="btn-refresh-inbox" onclick="refreshInbox()" class="text-sm flex items-center gap-1.5 text-emerald-600 font-medium hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Refresh
+                        </button>
+                    </div>
+                    
+                    <!-- Tempat list email dirender -->
+                    <div id="email-inbox-list" class="divide-y divide-gray-100">
+                        <!-- State Kosong Default -->
+                        <div class="p-8 text-center" id="inbox-empty-state">
+                            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"></path></svg>
+                            <p class="text-gray-500 font-medium">Kotak masuk masih kosong</p>
+                            <p class="text-gray-400 text-sm mt-1">Pesan yang dikirim ke alamat di atas akan otomatis muncul di sini (klik refresh untuk memuat ulang).</p>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Area Input Footer -->
-        <footer id="main-footer" class="bg-gray-50 p-3 pb-8 md:pb-6 flex-shrink-0 transition-opacity duration-500 border-t border-gray-200 relative">
-            <div class="max-w-4xl mx-auto relative flex items-end gap-2 bg-white border border-gray-300 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
-                <textarea id="user-input" disabled rows="1" class="w-full bg-transparent text-sm p-4 pr-14 outline-none disabled:opacity-60 resize-none max-h-32" placeholder="Menyiapkan chat..."></textarea>
-                <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-10 w-10">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                    </svg>
-                </button>
             </div>
-        </footer>
+        </div>
+        <!-- AKHIR HALAMAN TEMP EMAIL -->
+
     </div>
 
     <script>
@@ -150,6 +274,184 @@
         let currentUser = null;
         let isWaitingForResponse = false;
         
+        // --- LOGIKA PERGANTIAN HALAMAN (ROUTING) ---
+        function openPage(pageId) {
+            const pages = ['page-home', 'page-chat', 'page-email'];
+            const backBtn = document.getElementById('btn-back-home');
+            const headerTitle = document.getElementById('header-title');
+
+            document.getElementById('user-dropdown').classList.add('hidden');
+
+            pages.forEach(id => {
+                const el = document.getElementById(id);
+                if (id === pageId) {
+                    // Munculkan halaman yang dipilih
+                    el.classList.remove('opacity-0', 'pointer-events-none', id === 'page-home' ? '-translate-x-10' : 'translate-x-10');
+                    el.classList.add('opacity-100', 'translate-x-0');
+                } else {
+                    // Sembunyikan halaman lainnya
+                    el.classList.remove('opacity-100', 'translate-x-0');
+                    el.classList.add('opacity-0', 'pointer-events-none');
+                    
+                    if (pageId === 'page-home') {
+                         el.classList.add('translate-x-10');
+                         el.classList.remove('-translate-x-10');
+                    } else {
+                         if (id === 'page-home') el.classList.add('-translate-x-10');
+                         else el.classList.add('translate-x-10');
+                    }
+                }
+            });
+
+            // Update Judul & Tombol Kembali
+            if (pageId === 'page-home') {
+                setTimeout(() => {
+                    backBtn.classList.add('hidden');
+                    headerTitle.innerHTML = `TheProperSide <span class="text-gray-400 font-normal hidden sm:inline">| Workspace</span>`;
+                }, 100);
+            } else if (pageId === 'page-chat') {
+                setTimeout(() => {
+                    backBtn.classList.remove('hidden');
+                    headerTitle.innerHTML = `Multi AI Chat`;
+                }, 100);
+            } else if (pageId === 'page-email') {
+                setTimeout(() => {
+                    backBtn.classList.remove('hidden');
+                    headerTitle.innerHTML = `Temp Email`;
+                }, 100);
+            }
+        }
+
+        // --- LOGIKA UI UMUM & DROPDOWN ---
+        function toggleDropdown() {
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+        
+        document.addEventListener('click', function(event) {
+            const profile = document.getElementById('user-profile');
+            const dropdown = document.getElementById('user-dropdown');
+            if (profile && !profile.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+
+        // ==========================================
+        //  LOGIKA SKELETON: TEMP EMAIL API (UNTUK ANDA)
+        // ==========================================
+        
+        // 1. Fungsi untuk me-request email sementara baru dari API Anda
+        async function generateNewEmail() {
+            const emailInput = document.getElementById('temp-email-address');
+            const inboxList = document.getElementById('email-inbox-list');
+            const emptyState = document.getElementById('inbox-empty-state');
+            
+            emailInput.value = "Menghasilkan email...";
+            
+            // TODO: Masukkan logika fetch() ke API Temp Email Anda di sini
+            /*
+               try {
+                   let response = await fetch('https://api-temp-email-anda.com/generate');
+                   let data = await response.json();
+                   emailInput.value = data.emailAddress;
+               } catch (e) {
+                   emailInput.value = "Gagal membuat email!";
+               }
+            */
+
+            // Dummy Simulasi
+            setTimeout(() => {
+                const randomString = Math.random().toString(36).substring(2, 8);
+                emailInput.value = `${randomString}@theproperside.mail.com`;
+                
+                // Bersihkan inbox saat email baru dibuat
+                inboxList.innerHTML = '';
+                inboxList.appendChild(emptyState);
+            }, 1000);
+        }
+
+        // 2. Fungsi untuk Copy Alamat Email
+        function copyTempEmail() {
+            const emailInput = document.getElementById('temp-email-address');
+            const btnCopy = document.getElementById('btn-copy-email');
+            
+            if(!emailInput.value || emailInput.value.includes("Menghasilkan")) return;
+            
+            try {
+                navigator.clipboard.writeText(emailInput.value);
+            } catch (err) {
+                emailInput.select();
+                document.execCommand("copy");
+            }
+            
+            const originalHTML = btnCopy.innerHTML;
+            btnCopy.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Tersalin!`;
+            btnCopy.classList.replace('bg-gray-800', 'bg-emerald-600');
+            
+            setTimeout(() => { 
+                btnCopy.innerHTML = originalHTML; 
+                btnCopy.classList.replace('bg-emerald-600', 'bg-gray-800'); 
+            }, 2000);
+        }
+
+        // 3. Fungsi untuk Cek/Refresh Inbox dari API Anda
+        async function refreshInbox() {
+            const btnRefresh = document.getElementById('btn-refresh-inbox');
+            const inboxList = document.getElementById('email-inbox-list');
+            const emptyState = document.getElementById('inbox-empty-state');
+            const currentEmail = document.getElementById('temp-email-address').value;
+            
+            // Putar icon refresh
+            btnRefresh.querySelector('svg').classList.add('animate-spin');
+            
+            // TODO: Masukkan logika fetch() ke API Inbox Anda di sini berdasarkan currentEmail
+            /*
+               try {
+                   let response = await fetch(`https://api-temp-email-anda.com/inbox?email=${currentEmail}`);
+                   let emails = await response.json();
+                   
+                   if(emails.length > 0) {
+                        // Render daftar email...
+                   }
+               } catch (e) {
+                   console.error(e);
+               }
+            */
+
+            // Dummy Simulasi (Hapus ini nanti setelah API Anda dipasang)
+            setTimeout(() => {
+                btnRefresh.querySelector('svg').classList.remove('animate-spin');
+                
+                // Contoh merender satu list email
+                if (emptyState && inboxList.contains(emptyState)) {
+                    inboxList.removeChild(emptyState);
+                }
+                
+                const dummyEmailHTML = `
+                    <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0">
+                        <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
+                            I
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="text-sm font-bold text-gray-900 truncate">Instagram</h4>
+                                <span class="text-xs text-gray-500 whitespace-nowrap ml-2">Baru saja</span>
+                            </div>
+                            <p class="text-sm text-gray-800 font-medium truncate">Kode Konfirmasi Anda: 812934</p>
+                            <p class="text-xs text-gray-500 truncate mt-0.5">Selesaikan pendaftaran Anda dengan memasukkan kode berikut...</p>
+                        </div>
+                    </div>
+                `;
+                inboxList.insertAdjacentHTML('afterbegin', dummyEmailHTML);
+
+            }, 1000);
+        }
+
+
+        // ==========================================
+        //  LOGIKA MULTI AI CHAT
+        // ==========================================
         let chats = []; 
         let memoryMessages = []; 
         let currentChatId = null;
@@ -172,7 +474,7 @@
 
         document.getElementById('chat-container').addEventListener('click', function(e) {
             if (e.target && e.target.classList.contains('copy-btn')) {
-                copyToClipboard(e.target);
+                copyToClipboardChat(e.target);
             }
         });
 
@@ -188,12 +490,11 @@
             }
         }
 
-        function copyToClipboard(btn) {
+        function copyToClipboardChat(btn) {
             const codeBlock = btn.nextElementSibling.querySelector('code');
             const code = codeBlock.textContent || codeBlock.innerText;
-            try {
-                navigator.clipboard.writeText(code);
-            } catch (err) {
+            try { navigator.clipboard.writeText(code); } 
+            catch (err) {
                 const textArea = document.createElement("textarea");
                 textArea.value = code; document.body.appendChild(textArea); textArea.select();
                 document.execCommand("copy"); document.body.removeChild(textArea);
@@ -207,11 +508,8 @@
             const container = document.getElementById('chat-container');
             const div = document.createElement('div');
             div.className = `chat-msg ${isUser ? 'msg-user' : 'msg-ai'}`;
-            if (isUser) {
-                div.textContent = text;
-            } else {
-                div.innerHTML = DOMPurify.sanitize(marked.parse(text));
-            }
+            if (isUser) { div.textContent = text; } 
+            else { div.innerHTML = DOMPurify.sanitize(marked.parse(text)); }
             container.appendChild(div);
             container.parentElement.scrollTop = container.parentElement.scrollHeight;
             div.querySelectorAll('pre code').forEach((block) => { hljs.highlightElement(block); });
@@ -255,7 +553,7 @@
                 chats = data || [];
                 if (chats.length > 0) selectChat(chats[0].id);
             } catch (e) {
-                console.warn("Info: Tabel database belum dibuat. Menggunakan memori sementara untuk sesi ini.");
+                console.warn("DB belum diatur, pakai mode offline.");
                 dbReady = false; 
             }
             renderSidebar();
@@ -347,34 +645,37 @@
             currentUser = session?.user;
             const loginBtn = document.getElementById('login-btn');
             const userProfile = document.getElementById('user-profile');
+            const userName = document.getElementById('user-name');
+            const dropdownEmail = document.getElementById('dropdown-email');
             const userInput = document.getElementById('user-input');
             const sendBtn = document.getElementById('send-btn');
+            
             const guestSidebarWarning = document.getElementById('guest-sidebar-warning');
             const guestChatBanner = document.getElementById('guest-chat-banner');
 
-            // Setelan awal: Input selalu bisa diketik walau belum login (Guest Mode aktif)
             if (!isWaitingForResponse) {
-                userInput.disabled = false; 
-                sendBtn.disabled = false;
+                userInput.disabled = false; sendBtn.disabled = false;
                 userInput.placeholder = "Ketik pesan Anda... (Tekan Enter untuk mengirim)";
             }
 
             if (currentUser) {
                 // USER LOGIN
                 loginBtn.classList.add('hidden');
-                userProfile.classList.remove('hidden'); 
-                userProfile.classList.add('flex');
+                userProfile.classList.remove('hidden'); userProfile.classList.add('flex');
+                
                 document.getElementById('user-avatar').src = currentUser.user_metadata?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=random';
+                userName.textContent = currentUser.user_metadata?.full_name || 'User';
+                dropdownEmail.textContent = currentUser.email;
                 
                 guestSidebarWarning.classList.add('hidden');
                 guestChatBanner.classList.add('hidden');
                 
                 loadChats(); 
             } else {
-                // USER BELUM LOGIN (GUEST)
+                // USER GUEST
                 loginBtn.classList.remove('hidden');
-                userProfile.classList.add('hidden'); 
-                userProfile.classList.remove('flex');
+                userProfile.classList.add('hidden'); userProfile.classList.remove('flex');
+                document.getElementById('user-dropdown').classList.add('hidden');
                 
                 guestSidebarWarning.classList.remove('hidden');
                 guestChatBanner.classList.remove('hidden');
@@ -383,10 +684,9 @@
                 renderSidebar(); 
                 document.getElementById('chat-container').innerHTML = '';
                 
-                // Pesan sambutan opsional untuk guest mode
                 setTimeout(() => {
-                    if(!currentChatId) {
-                        appendMessage("Halo! Anda sedang berada dalam **Mode Tamu**.\n\nAnda dapat mengobrol dengan saya secara normal, namun percakapan ini akan hilang jika halaman ini ditutup. Login dengan Google di pojok kanan atas untuk menyimpan riwayat chat Anda selamanya.", false);
+                    if(!currentChatId && document.getElementById('page-chat').classList.contains('opacity-100')) {
+                        appendMessage("Halo! Anda berada dalam **Mode Tamu**.\n\nPercakapan ini bersifat sementara. Login untuk menyimpan riwayat chat dan mengakses fitur penuh Workspace ini.", false);
                     }
                 }, 500);
             }
@@ -400,7 +700,9 @@
 
         async function logout() {
             if (!window.myAppSupabase) return;
+            document.getElementById('user-dropdown').classList.add('hidden');
             await window.myAppSupabase.auth.signOut();
+            openPage('page-home');
         }
 
         async function sendMessage() {
@@ -453,6 +755,7 @@
         userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
         userInput.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 
+        // --- INISIALISASI ---
         async function waitForSupabase() {
             return new Promise((resolve) => { const check = () => { if (window.supabase && window.supabase.createClient) resolve(); else setTimeout(check, 100); }; check(); });
         }
@@ -473,6 +776,7 @@
                 console.error("Supabase Init Error:", err);
             } finally {
                 document.getElementById('initial-loader').style.display = 'none';
+                openPage('page-home'); // Buka halaman Home secara default saat awal load
             }
         }
         
@@ -480,4 +784,3 @@
     </script>
 </body>
 </html>
-
