@@ -566,6 +566,7 @@
         let memoryMessages = []; 
         let currentChatId = null;
         let dbReady = true; 
+        let currentConversation = []; // VARIABEL BARU: Menyimpan memori chat saat ini
 
         marked.use({
             renderer: {
@@ -671,6 +672,7 @@
 
         async function selectChat(id) {
             currentChatId = id;
+            currentConversation = []; // Reset memori saat ganti chat
             renderSidebar();
             document.getElementById('chat-container').innerHTML = '';
             
@@ -679,16 +681,25 @@
             if (dbReady && currentUser && String(id).length > 20) {
                 const { data, error } = await window.myAppSupabase.from('ai_messages').select('*').eq('chat_id', id).order('created_at', { ascending: true });
                 if (!error && data) {
-                    data.forEach(msg => appendMessage(msg.content, msg.role === 'user'));
+                    data.forEach(msg => {
+                        appendMessage(msg.content, msg.role === 'user');
+                        // Masukkan ke memori (Format standar API: user & assistant)
+                        currentConversation.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+                    });
                 }
             } else {
                 const chatMessages = memoryMessages.filter(m => m.chat_id === id);
-                chatMessages.forEach(msg => appendMessage(msg.content, msg.role === 'user'));
+                chatMessages.forEach(msg => {
+                    appendMessage(msg.content, msg.role === 'user');
+                    // Masukkan ke memori
+                    currentConversation.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
+                });
             }
         }
 
         function handleNewChatClick() {
             currentChatId = null;
+            currentConversation = []; // Reset memori saat buat chat baru
             document.getElementById('chat-container').innerHTML = '';
             renderSidebar();
             if (window.innerWidth < 768) toggleSidebar();
@@ -858,12 +869,22 @@
 
             appendMessage(text, true);
             saveMessageToDB(currentChatId, 'user', text);
+            
+            // Masukkan pesan user yang baru diketik ke memori
+            currentConversation.push({ role: 'user', content: text });
+            
+            // Batasi memori yang dikirim maksimal 15 pesan terakhir agar token API tidak jebol/limit
+            const recentHistory = currentConversation.slice(-15);
 
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, modelProvider: modelSelector.value })
+                    body: JSON.stringify({ 
+                        text: text, 
+                        messages: recentHistory, // KIRIM MEMORI KE BACKEND!
+                        modelProvider: modelSelector.value 
+                    })
                 });
 
                 if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
@@ -872,6 +893,9 @@
                 if (data.reply) {
                     appendMessage(data.reply, false);
                     saveMessageToDB(currentChatId, 'ai', data.reply); 
+                    
+                    // Masukkan balasan AI ke memori juga
+                    currentConversation.push({ role: 'assistant', content: data.reply });
                 } else {
                     appendMessage("Error: " + (data.error || "Terjadi kesalahan."), false);
                 }
