@@ -425,16 +425,24 @@
                     inboxList.innerHTML = ''; 
                     
                     emails.forEach(email => {
+                        // Logging untuk debugging (sementara) - Anda bisa hapus ini nanti jika sudah stabil
+                        console.log("Struktur Email yang diterima:", email);
+                        
+                        // Menangani variasi keys output dari API (sender/from, subject, dll)
                         const sender = email.from || email.sender || email.from_name || email.fromAddress || "Pengirim Tidak Diketahui";
                         const subject = email.subject || "Tanpa Subjek";
-                        const snippet = email.text || email.body || email.textBody || email.snippet || email.body_text || "Buka untuk membaca detail pesan...";
+                        
+                        // Coba ambil isi email dari berbagai kemungkinan nama variabel yang sering dipakai API Temp Mail
+                        const snippet = email.text || email.body || email.textBody || email.snippet || email.body_text || email.html || "Pesan ini tidak memiliki isi teks yang terbaca (mungkin format HTML kompleks).";
+                        
                         const date = email.date || email.created_at || email.receivedAt || "Baru saja";
                         const initial = sender.charAt(0).toUpperCase();
                         
+                        // Bersihkan string snippet dari karakter yang merusak alert() JavaScript
                         const safeSnippet = String(snippet).replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "");
                         
                         const emailHTML = `
-                            <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="alert('${safeSnippet}')">
+                            <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="alert('Dari: ${sender}\\nSubjek: ${subject}\\n\\nIsi Pesan:\\n${safeSnippet}')">
                                 <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
                                     ${initial}
                                 </div>
