@@ -22,93 +22,130 @@
         body { font-family: 'Inter', sans-serif; }
         .chat-msg { max-width: 90%; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 1rem; line-height: 1.6; }
         .msg-user { align-self: flex-end; background-color: #4f46e5; color: white; border-bottom-right-radius: 0.25rem; }
-        .msg-ai { align-self: flex-start; background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; }
+        .msg-ai { align-self: flex-start; background-color: #ffffff; color: #1f2937; border-bottom-left-radius: 0.25rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05);}
         
-        /* Perbaikan CSS untuk Code Block agar bisa di-scroll */
+        /* CSS Code Block */
         .code-container { position: relative; margin: 0.75rem 0; }
-        pre { 
-            background: #282c34 !important; 
-            border-radius: 0.5rem; 
-            padding: 1rem !important; 
-            padding-top: 2.5rem !important; /* Ruang untuk tombol salin */
-            margin: 0; 
-            overflow: auto; 
-            max-height: 400px; /* Batasan tinggi maksimal (muncul scroll jika lewat) */
-        }
+        pre { background: #282c34 !important; border-radius: 0.5rem; padding: 1rem !important; padding-top: 2.5rem !important; margin: 0; overflow: auto; max-height: 400px; }
         code { font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.875rem; color: #abb2bf; display: block; white-space: pre; }
         
-        /* Styling Tombol Salin agar tetap di atas saat di-scroll */
+        /* Tombol Salin & Scrollbar */
         .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; z-index: 10; border: none; transition: background 0.2s;}
         .copy-btn:hover { background: #374151; }
-        
-        /* Custom Scrollbar agar terlihat lebih rapi di dalam kotak kode */
         pre::-webkit-scrollbar { width: 6px; height: 6px; }
         pre::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
         pre::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         pre::-webkit-scrollbar-thumb:hover { background: #6b7280; }
         
-        #initial-loader { position: fixed; inset: 0; background: white; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        /* Scrollbar kustom untuk sidebar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         
         textarea::-webkit-scrollbar { width: 0px; background: transparent; }
+        #initial-loader { position: fixed; inset: 0; background: white; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
-<body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
+<body class="flex h-screen bg-gray-50 overflow-hidden font-sans">
 
     <div id="initial-loader">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
         <p class="text-sm text-gray-500">Menyiapkan asisten AI Anda...</p>
     </div>
 
-    <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0 opacity-0 transition-opacity duration-500" id="main-header">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 class="font-bold text-lg text-indigo-600 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Multi AI Chat
-            </h1>
-            <div class="flex items-center gap-3">
-                <select id="model-selector" class="bg-gray-50 border border-gray-300 text-xs rounded-lg p-2 cursor-pointer outline-none focus:ring-1 focus:ring-indigo-500">
-                    <option value="gemini">Gemini 1.5</option>
-                    <option value="groq">Groq (Llama 3)</option>
-                </select>
-                <button id="login-btn" onclick="loginGoogle()" class="hidden bg-indigo-600 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-indigo-700 transition shadow-sm">Login Google</button>
-                <div id="user-profile" class="hidden items-center gap-3">
-                    <img id="user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-gray-200 shadow-sm object-cover">
-                    <button onclick="logout()" class="text-gray-500 text-xs hover:text-red-600 transition font-medium">Logout</button>
-                </div>
-            </div>
-        </div>
-    </header>
+    <!-- Overlay Latar Belakang Sidebar (Mode HP) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
-    <main id="chat-container" class="flex-1 overflow-y-auto w-full max-w-5xl mx-auto p-4 flex flex-col opacity-0 transition-opacity duration-500 scroll-smooth"></main>
-
-    <footer id="main-footer" class="bg-white border-t p-3 pb-6 flex-shrink-0 opacity-0 transition-opacity duration-500">
-        <div class="max-w-5xl mx-auto relative flex items-end gap-2 bg-gray-50 border border-gray-300 rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
-            <textarea id="user-input" disabled rows="1" class="w-full bg-transparent text-sm p-4 pr-14 outline-none disabled:opacity-60 resize-none max-h-32" placeholder="Ketik pesan Anda... (Tekan Enter untuk mengirim)"></textarea>
-            <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-10 w-10">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                </svg>
+    <!-- Sidebar Kiri: History Chat -->
+    <aside id="sidebar" class="w-72 bg-gray-900 text-gray-300 flex flex-col shrink-0 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 border-r border-gray-800">
+        <div class="p-4 flex items-center justify-between border-b border-gray-800 shrink-0 h-[69px]">
+            <h2 class="font-bold text-lg text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                Riwayat Chat
+            </h2>
+            <button class="md:hidden text-gray-400 hover:text-white focus:outline-none" onclick="toggleSidebar()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
-    </footer>
+        
+        <div class="p-3 shrink-0">
+            <button onclick="handleNewChatClick()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-xl transition shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Chat Baru
+            </button>
+        </div>
+        
+        <!-- Daftar History -->
+        <div id="chat-list" class="flex-1 overflow-y-auto p-3 pt-0 space-y-1 custom-scrollbar">
+            <!-- Daftar Obrolan Akan Muncul Di Sini -->
+        </div>
+    </aside>
+
+    <!-- Area Konten Utama Kanan -->
+    <div class="flex-1 flex flex-col min-w-0 h-screen relative bg-gray-50">
+        
+        <!-- Header Atas -->
+        <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0 transition-opacity duration-500 h-[69px]" id="main-header">
+            <div class="h-full px-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <button class="md:hidden text-gray-600 hover:text-indigo-600 focus:outline-none" onclick="toggleSidebar()">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <h1 class="font-bold text-lg text-indigo-600 hidden sm:block">Multi AI Chat</h1>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="model-selector" class="bg-gray-50 border border-gray-300 text-xs rounded-lg p-2 cursor-pointer outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="gemini">Gemini 1.5</option>
+                        <option value="groq">Groq (Llama 3)</option>
+                    </select>
+                    <button id="login-btn" onclick="loginGoogle()" class="hidden bg-indigo-600 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-indigo-700 transition shadow-sm">Login</button>
+                    <div id="user-profile" class="hidden items-center gap-3">
+                        <img id="user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-gray-200 shadow-sm object-cover">
+                        <button onclick="logout()" class="text-gray-500 text-xs hover:text-red-600 transition font-medium">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Container Chat Obrolan -->
+        <main class="flex-1 overflow-y-auto w-full relative scroll-smooth bg-gray-50">
+            <div id="chat-container" class="max-w-4xl mx-auto p-4 flex flex-col min-h-full pb-8">
+                <!-- Chat Kosong / Welcome Message bisa ditaruh di sini melalui JS -->
+            </div>
+        </main>
+
+        <!-- Area Input Footer -->
+        <footer id="main-footer" class="bg-gray-50 p-3 pb-6 flex-shrink-0 transition-opacity duration-500 border-t border-gray-200">
+            <div class="max-w-4xl mx-auto relative flex items-end gap-2 bg-white border border-gray-300 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
+                <textarea id="user-input" disabled rows="1" class="w-full bg-transparent text-sm p-4 pr-14 outline-none disabled:opacity-60 resize-none max-h-32" placeholder="Ketik pesan Anda... (Tekan Enter untuk mengirim)"></textarea>
+                <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-10 w-10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                </button>
+            </div>
+        </footer>
+    </div>
 
     <script>
         window.myAppSupabase = null;
         let currentUser = null;
         let isWaitingForResponse = false;
+        
+        // State Management History Chat
+        let chats = []; // Array of object: {id, title}
+        let memoryMessages = []; // Fallback array jika database belum diset
+        let currentChatId = null;
+        let dbReady = true; // Status database Supabase
 
-        // Membungkus blok kode dengan container agar tombol salin tetap melayang saat di-scroll
+        // --- SETUP MARKED.JS ---
         marked.use({
             renderer: {
                 code(token) {
                     let codeText = typeof token === 'object' ? token.text : arguments[0];
                     let lang = typeof token === 'object' ? token.lang : arguments[1];
-                    
                     if (!codeText) codeText = '';
                     const escapedCode = String(codeText).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    
                     return `<div class="code-container">
                                 <button class="copy-btn bg-gray-600">Salin</button>
                                 <pre><code class="language-${lang || 'plaintext'}">${escapedCode}</code></pre>
@@ -117,65 +154,188 @@
             }
         });
 
+        // Event Listener untuk Tombol Salin
         document.getElementById('chat-container').addEventListener('click', function(e) {
             if (e.target && e.target.classList.contains('copy-btn')) {
                 copyToClipboard(e.target);
             }
         });
 
-        async function waitForSupabase() {
-            return new Promise((resolve) => {
-                const check = () => {
-                    if (window.supabase && window.supabase.createClient) resolve();
-                    else setTimeout(check, 100);
-                };
-                check();
-            });
+        // --- FUNGSI UI & UTILITY ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
         }
 
         function copyToClipboard(btn) {
-            // Mencari elemen <code> yang ada di dalam <pre> di sebelah tombol
             const codeBlock = btn.nextElementSibling.querySelector('code');
             const code = codeBlock.textContent || codeBlock.innerText;
-            
             try {
                 navigator.clipboard.writeText(code);
             } catch (err) {
                 const textArea = document.createElement("textarea");
-                textArea.value = code;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand("copy");
-                document.body.removeChild(textArea);
+                textArea.value = code; document.body.appendChild(textArea); textArea.select();
+                document.execCommand("copy"); document.body.removeChild(textArea);
             }
-            
             const originalText = btn.innerText;
-            btn.innerText = 'Tersalin!';
-            btn.classList.replace('bg-gray-600', 'bg-green-600');
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.classList.replace('bg-green-600', 'bg-gray-600');
-            }, 2000);
+            btn.innerText = 'Tersalin!'; btn.classList.replace('bg-gray-600', 'bg-green-600');
+            setTimeout(() => { btn.innerText = originalText; btn.classList.replace('bg-green-600', 'bg-gray-600'); }, 2000);
         }
 
         function appendMessage(text, isUser) {
             const container = document.getElementById('chat-container');
             const div = document.createElement('div');
             div.className = `chat-msg ${isUser ? 'msg-user' : 'msg-ai'}`;
-            
             if (isUser) {
                 div.textContent = text;
             } else {
                 div.innerHTML = DOMPurify.sanitize(marked.parse(text));
             }
-            
             container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-            
-            div.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
+            // Auto Scroll
+            container.parentElement.scrollTop = container.parentElement.scrollHeight;
+            div.querySelectorAll('pre code').forEach((block) => { hljs.highlightElement(block); });
+        }
+
+        // --- FUNGSI HISTORY & DATABASE ---
+
+        function renderSidebar() {
+            const list = document.getElementById('chat-list');
+            list.innerHTML = '';
+            chats.forEach(chat => {
+                const isActive = chat.id === currentChatId;
+                const div = document.createElement('div');
+                div.className = `group flex items-center justify-between p-3 rounded-xl cursor-pointer text-sm mb-1.5 transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'hover:bg-gray-800 text-gray-300'}`;
+                div.onclick = () => selectChat(chat.id);
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'truncate flex-1 font-medium';
+                titleSpan.textContent = chat.title || 'Chat Tanpa Judul';
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = `items-center gap-2 ${isActive ? 'flex' : 'hidden group-hover:flex'} pl-2`;
+
+                // Edit Button
+                const editBtn = document.createElement('button');
+                editBtn.innerHTML = `<svg class="w-4 h-4 opacity-70 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>`;
+                editBtn.onclick = (e) => { e.stopPropagation(); renameChat(chat.id); };
+
+                // Delete Button
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = `<svg class="w-4 h-4 opacity-70 hover:opacity-100 hover:text-red-400 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteChat(chat.id); };
+
+                actionsDiv.appendChild(editBtn); actionsDiv.appendChild(delBtn);
+                div.appendChild(titleSpan); div.appendChild(actionsDiv);
+                list.appendChild(div);
             });
         }
+
+        async function loadChats() {
+            if (!currentUser) return;
+            try {
+                const { data, error } = await window.myAppSupabase.from('ai_chats').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+                if (error) throw error;
+                chats = data || [];
+                if (chats.length > 0) selectChat(chats[0].id);
+            } catch (e) {
+                console.warn("Info: Tabel database belum dibuat. Menggunakan memori sementara untuk sesi ini.");
+                dbReady = false; 
+            }
+            renderSidebar();
+        }
+
+        async function selectChat(id) {
+            currentChatId = id;
+            renderSidebar();
+            document.getElementById('chat-container').innerHTML = '';
+            
+            if (window.innerWidth < 768) toggleSidebar(); // Tutup sidebar di HP saat dipilih
+
+            if (dbReady && currentUser && String(id).length > 20) {
+                const { data, error } = await window.myAppSupabase.from('ai_messages').select('*').eq('chat_id', id).order('created_at', { ascending: true });
+                if (!error && data) {
+                    data.forEach(msg => appendMessage(msg.content, msg.role === 'user'));
+                }
+            } else {
+                // Fallback memori
+                const chatMessages = memoryMessages.filter(m => m.chat_id === id);
+                chatMessages.forEach(msg => appendMessage(msg.content, msg.role === 'user'));
+            }
+        }
+
+        function handleNewChatClick() {
+            currentChatId = null;
+            document.getElementById('chat-container').innerHTML = '';
+            renderSidebar();
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        async function createNewChatInDB(initialMessage) {
+            const newChat = {
+                id: 'chat-' + Date.now(), // ID Sementara
+                title: initialMessage.substring(0, 30) + (initialMessage.length > 30 ? '...' : ''),
+                user_id: currentUser?.id
+            };
+
+            if (dbReady && currentUser) {
+                const { data, error } = await window.myAppSupabase.from('ai_chats').insert([{ title: newChat.title, user_id: currentUser.id }]).select();
+                if (!error && data && data.length > 0) newChat.id = data[0].id;
+            }
+
+            chats.unshift(newChat);
+            currentChatId = newChat.id;
+            renderSidebar();
+            return newChat.id;
+        }
+
+        async function saveMessageToDB(chatId, role, content) {
+            if (dbReady && currentUser && String(chatId).length > 20) {
+                await window.myAppSupabase.from('ai_messages').insert([{ chat_id: chatId, role: role, content: content }]);
+            } else {
+                memoryMessages.push({ chat_id: chatId, role, content }); // Simpan di memori sementara
+            }
+        }
+
+        async function renameChat(id) {
+            const chat = chats.find(c => c.id === id);
+            if(!chat) return;
+            const newName = prompt("Masukkan nama baru untuk chat ini:", chat.title);
+            if(newName && newName.trim() !== "") {
+                chat.title = newName.trim();
+                renderSidebar();
+                if(dbReady && currentUser && String(id).length > 20) {
+                    await window.myAppSupabase.from('ai_chats').update({title: chat.title}).eq('id', id);
+                }
+            }
+        }
+
+        async function deleteChat(id) {
+            if(!confirm("Apakah Anda yakin ingin menghapus obrolan ini secara permanen?")) return;
+            chats = chats.filter(c => c.id !== id);
+            
+            if(currentChatId === id) {
+                currentChatId = null;
+                document.getElementById('chat-container').innerHTML = '';
+                if(chats.length > 0) selectChat(chats[0].id);
+            }
+            renderSidebar();
+
+            if(dbReady && currentUser && String(id).length > 20) {
+                await window.myAppSupabase.from('ai_chats').delete().eq('id', id);
+            } else {
+                memoryMessages = memoryMessages.filter(m => m.chat_id !== id);
+            }
+        }
+
+        // --- FUNGSI LOGIN & PENGIRIMAN PESAN ---
 
         function handleAuthState(session) {
             currentUser = session?.user;
@@ -186,41 +346,35 @@
 
             if (currentUser) {
                 loginBtn.classList.add('hidden');
-                userProfile.classList.remove('hidden');
-                userProfile.classList.add('flex');
+                userProfile.classList.remove('hidden'); userProfile.classList.add('flex');
                 document.getElementById('user-avatar').src = currentUser.user_metadata?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=random';
                 
                 if (!isWaitingForResponse) {
-                    userInput.disabled = false;
-                    sendBtn.disabled = false;
+                    userInput.disabled = false; sendBtn.disabled = false;
                     userInput.placeholder = "Ketik pesan Anda... (Tekan Enter untuk mengirim)";
                 }
+                loadChats(); // Load data history jika login
             } else {
                 loginBtn.classList.remove('hidden');
-                userProfile.classList.add('hidden');
-                userProfile.classList.remove('flex');
-                userInput.disabled = true;
-                sendBtn.disabled = true;
+                userProfile.classList.add('hidden'); userProfile.classList.remove('flex');
+                userInput.disabled = true; sendBtn.disabled = true;
                 userInput.placeholder = "Silakan login terlebih dahulu untuk memulai chat.";
+                
+                // Clear History dari UI
+                chats = []; memoryMessages = []; currentChatId = null;
+                renderSidebar(); document.getElementById('chat-container').innerHTML = '';
             }
         }
 
         async function loginGoogle() {
             if (!window.myAppSupabase) return;
-            try {
-                await window.myAppSupabase.auth.signInWithOAuth({ 
-                    provider: 'google',
-                    options: { redirectTo: window.location.origin }
-                });
-            } catch (error) {
-                alert("Gagal memanggil antarmuka login: " + error.message);
-            }
+            try { await window.myAppSupabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); } 
+            catch (error) { alert("Gagal memanggil login: " + error.message); }
         }
 
         async function logout() {
             if (!window.myAppSupabase) return;
             await window.myAppSupabase.auth.signOut();
-            document.getElementById('chat-container').innerHTML = ''; 
         }
 
         async function sendMessage() {
@@ -232,12 +386,17 @@
             if(!text || isWaitingForResponse) return;
             
             isWaitingForResponse = true;
-            appendMessage(text, true);
-            input.value = '';
-            input.style.height = 'auto'; 
-            input.disabled = true;
-            sendBtn.disabled = true;
+            input.value = ''; input.style.height = 'auto'; 
+            input.disabled = true; sendBtn.disabled = true;
             sendBtn.innerHTML = '<div class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>';
+
+            // Logika History: Jika ini chat baru, buat di DB dulu
+            if (!currentChatId) {
+                await createNewChatInDB(text);
+            }
+
+            appendMessage(text, true);
+            saveMessageToDB(currentChatId, 'user', text);
 
             try {
                 const response = await fetch('/api/chat', {
@@ -247,38 +406,32 @@
                 });
 
                 if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-                
                 const data = await response.json();
                 
                 if (data.reply) {
                     appendMessage(data.reply, false);
+                    saveMessageToDB(currentChatId, 'ai', data.reply); // Simpan balasan AI
                 } else {
-                    appendMessage("Error: " + (data.error || "Terjadi kesalahan pada server AI."), false);
+                    appendMessage("Error: " + (data.error || "Terjadi kesalahan."), false);
                 }
             } catch (err) {
-                appendMessage("⚠️ Gagal terhubung ke server. Pastikan Anda memiliki endpoint backend /api/chat yang aktif. Detail: " + err.message, false);
+                appendMessage("⚠️ Gagal memanggil AI. Cek koneksi endpoint /api/chat. Error: " + err.message, false);
             } finally {
                 isWaitingForResponse = false;
-                input.disabled = false;
-                sendBtn.disabled = false;
+                input.disabled = false; sendBtn.disabled = false;
                 sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>';
                 input.focus();
             }
         }
 
+        // --- INISIALISASI & LISTENER INPUT ---
         const userInput = document.getElementById('user-input');
+        userInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
+        userInput.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 
-        userInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
-
-        userInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault(); 
-                sendMessage();
-            }
-        });
+        async function waitForSupabase() {
+            return new Promise((resolve) => { const check = () => { if (window.supabase && window.supabase.createClient) resolve(); else setTimeout(check, 100); }; check(); });
+        }
 
         async function initApp() {
             try {
@@ -286,21 +439,16 @@
                 const supabaseUrl = "https://mjvgnxiudhnuaccxnsnh.supabase.co"; 
                 const supabaseAnonKey = "sb_publishable_-zoS7TeFgb9QZkhnuZe28A_jnj1Xno6";
                 
-                if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes("MASUKKAN")) {
+                if (supabaseUrl && !supabaseUrl.includes("MASUKKAN")) {
                     window.myAppSupabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
                     const { data: { session } } = await window.myAppSupabase.auth.getSession();
                     handleAuthState(session);
                     window.myAppSupabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
-                } else {
-                    document.getElementById('user-input').placeholder = "Kredensial Supabase belum dikonfigurasi.";
                 }
             } catch (err) {
-                console.error("Gagal menginisialisasi Supabase:", err);
+                console.error("Supabase Init Error:", err);
             } finally {
                 document.getElementById('initial-loader').style.display = 'none';
-                document.getElementById('main-header').classList.remove('opacity-0');
-                document.getElementById('chat-container').classList.remove('opacity-0');
-                document.getElementById('main-footer').classList.remove('opacity-0');
             }
         }
         
@@ -308,3 +456,5 @@
     </script>
 </body>
 </html>
+
+
