@@ -408,27 +408,47 @@
                 const response = await fetch(`https://bintangapi.full.diskon.cloud/api/tempmail/check/?token=${tempEmailToken}`);
                 const data = await response.json();
                 
+                // Log untuk memonitor struktur asli dari API
+                console.log("Respon Inbox API:", data);
+                
                 btnRefresh.querySelector('svg').classList.remove('animate-spin');
 
-                // Beradaptasi menangkap array list email dari API
+                // Deteksi dinamis untuk mengekstrak array email dari struktur JSON API
                 let emails = [];
-                if (data.result && Array.isArray(data.result)) emails = data.result;
-                else if (data.data && Array.isArray(data.data)) emails = data.data;
-                else if (Array.isArray(data)) emails = data;
+                if (data.result) {
+                    if (Array.isArray(data.result)) {
+                        emails = data.result;
+                    } else if (data.result.data && Array.isArray(data.result.data)) {
+                        emails = data.result.data; 
+                    } else if (typeof data.result === 'object' && !Array.isArray(data.result)) {
+                        // Antisipasi jika kembalian berupa object tunggal (1 email) atau pesan error
+                        emails = [data.result];
+                    }
+                } else if (data.data && Array.isArray(data.data)) {
+                    emails = data.data;
+                } else if (Array.isArray(data)) {
+                    emails = data;
+                }
 
-                if (emails.length > 0) {
-                    inboxList.innerHTML = ''; // Hapus state kosong
+                // Cek apakah data valid dan memang berisi email (bukan pesan "inbox kosong")
+                const isValidInbox = Array.isArray(emails) && emails.length > 0 && (emails[0].subject || emails[0].from || emails[0].sender);
+
+                if (isValidInbox) {
+                    inboxList.innerHTML = ''; // Hapus tampilan kotak kosong
                     
                     emails.forEach(email => {
-                        // Menangani variasi keys output dari API (sender/from, subject, dll)
-                        const sender = email.from || email.sender || email.from_name || "Pengirim Tidak Diketahui";
+                        // Ekstrak data berdasarkan variasi nama kunci (key) umum dari API TempMail
+                        const sender = email.from || email.sender || email.from_name || email.fromAddress || "Pengirim Tidak Diketahui";
                         const subject = email.subject || "Tanpa Subjek";
-                        const snippet = email.text || email.body || email.snippet || "Silakan buka untuk membaca pesan penuh...";
-                        const date = email.date || email.created_at || "Baru saja";
+                        const snippet = email.text || email.body || email.textBody || email.snippet || "Buka untuk membaca detail pesan...";
+                        const date = email.date || email.created_at || email.receivedAt || "Baru saja";
                         const initial = sender.charAt(0).toUpperCase();
                         
+                        // Bersihkan teks dari kutip dan enter agar tidak merusak fungsi onClick (Alert)
+                        const safeSnippet = snippet.replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "");
+                        
                         const emailHTML = `
-                            <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="alert('Isi pesan:\\n\\n${snippet.replace(/"/g, '&quot;')}')">
+                            <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="alert('${safeSnippet}')">
                                 <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
                                     ${initial}
                                 </div>
@@ -438,14 +458,14 @@
                                         <span class="text-xs text-gray-500 whitespace-nowrap ml-2">${date}</span>
                                     </div>
                                     <p class="text-sm text-gray-800 font-medium truncate">${subject}</p>
-                                    <p class="text-xs text-gray-500 truncate mt-0.5">${snippet}</p>
+                                    <p class="text-xs text-gray-500 truncate mt-0.5">${snippet.substring(0, 100)}${snippet.length > 100 ? '...' : ''}</p>
                                 </div>
                             </div>
                         `;
                         inboxList.insertAdjacentHTML('beforeend', emailHTML);
                     });
                 } else {
-                    // Jika belum ada pesan masuk, tetap tunjukkan state kosong
+                    // Jika belum ada pesan masuk (termasuk respon API bilang kosong), pastikan state kosong muncul
                     inboxList.innerHTML = '';
                     inboxList.appendChild(emptyState);
                 }
