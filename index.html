@@ -53,8 +53,10 @@
         <p class="text-sm text-gray-500">Menyiapkan asisten AI Anda...</p>
     </div>
 
+    <!-- Overlay Latar Belakang Sidebar (Mode HP) -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
+    <!-- Sidebar Kiri: History Chat -->
     <aside id="sidebar" class="w-72 bg-gray-900 text-gray-300 flex flex-col shrink-0 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 border-r border-gray-800">
         <div class="p-4 flex items-center justify-between border-b border-gray-800 shrink-0 h-[69px]">
             <h2 class="font-bold text-lg text-white flex items-center gap-2">
@@ -73,12 +75,27 @@
             </button>
         </div>
         
+        <!-- Daftar History -->
         <div id="chat-list" class="flex-1 overflow-y-auto p-3 pt-0 space-y-1 custom-scrollbar">
-            </div>
+            <!-- Daftar Obrolan Akan Muncul Di Sini -->
+        </div>
+
+        <!-- Banner peringatan untuk Guest Mode di Sidebar -->
+        <div id="guest-sidebar-warning" class="hidden p-4 border-t border-gray-800 bg-gray-800/50 shrink-0">
+            <p class="text-xs text-gray-400 text-center leading-relaxed">
+                Anda menggunakan <span class="font-semibold text-gray-300">Mode Tamu</span>. <br>
+                Riwayat obrolan tidak akan tersimpan jika Anda memuat ulang (refresh) halaman.
+            </p>
+            <button onclick="loginGoogle()" class="w-full mt-3 text-sm bg-gray-700 hover:bg-gray-600 text-white py-1.5 rounded-lg transition border border-gray-600">
+                Login untuk Menyimpan
+            </button>
+        </div>
     </aside>
 
+    <!-- Area Konten Utama Kanan -->
     <div class="flex-1 flex flex-col min-w-0 h-[100dvh] relative bg-gray-50">
         
+        <!-- Header Atas -->
         <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0 transition-opacity duration-500 h-[69px]" id="main-header">
             <div class="h-full px-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -101,14 +118,24 @@
             </div>
         </header>
 
+        <!-- Container Chat Obrolan -->
         <main class="flex-1 overflow-y-auto w-full relative scroll-smooth bg-gray-50">
+            <!-- Banner notifikasi kecil di atas ruang chat saat Guest Mode -->
+            <div id="guest-chat-banner" class="hidden bg-yellow-50 border-b border-yellow-100 px-4 py-2 text-center shadow-sm">
+                <p class="text-xs text-yellow-800">
+                    <span class="font-semibold">⚠️ Mode Tamu:</span> Anda bisa chatting, tapi riwayat tidak akan tersimpan permanen. <button onclick="loginGoogle()" class="underline font-medium hover:text-yellow-900 ml-1">Login sekarang</button>.
+                </p>
+            </div>
+            
             <div id="chat-container" class="max-w-4xl mx-auto p-4 flex flex-col min-h-full pb-8">
-                </div>
+                <!-- Chat Kosong / Welcome Message bisa ditaruh di sini melalui JS -->
+            </div>
         </main>
 
-        <footer id="main-footer" class="bg-gray-50 p-3 pb-8 md:pb-6 flex-shrink-0 transition-opacity duration-500 border-t border-gray-200">
+        <!-- Area Input Footer -->
+        <footer id="main-footer" class="bg-gray-50 p-3 pb-8 md:pb-6 flex-shrink-0 transition-opacity duration-500 border-t border-gray-200 relative">
             <div class="max-w-4xl mx-auto relative flex items-end gap-2 bg-white border border-gray-300 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
-                <textarea id="user-input" disabled rows="1" class="w-full bg-transparent text-sm p-4 pr-14 outline-none disabled:opacity-60 resize-none max-h-32" placeholder="Ketik pesan Anda... (Tekan Enter untuk mengirim)"></textarea>
+                <textarea id="user-input" disabled rows="1" class="w-full bg-transparent text-sm p-4 pr-14 outline-none disabled:opacity-60 resize-none max-h-32" placeholder="Menyiapkan chat..."></textarea>
                 <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-10 w-10">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
@@ -263,7 +290,7 @@
             const newChat = {
                 id: 'chat-' + Date.now(), 
                 title: initialMessage.substring(0, 30) + (initialMessage.length > 30 ? '...' : ''),
-                user_id: currentUser?.id
+                user_id: currentUser?.id || 'guest'
             };
 
             if (dbReady && currentUser) {
@@ -322,25 +349,46 @@
             const userProfile = document.getElementById('user-profile');
             const userInput = document.getElementById('user-input');
             const sendBtn = document.getElementById('send-btn');
+            const guestSidebarWarning = document.getElementById('guest-sidebar-warning');
+            const guestChatBanner = document.getElementById('guest-chat-banner');
+
+            // Setelan awal: Input selalu bisa diketik walau belum login (Guest Mode aktif)
+            if (!isWaitingForResponse) {
+                userInput.disabled = false; 
+                sendBtn.disabled = false;
+                userInput.placeholder = "Ketik pesan Anda... (Tekan Enter untuk mengirim)";
+            }
 
             if (currentUser) {
+                // USER LOGIN
                 loginBtn.classList.add('hidden');
-                userProfile.classList.remove('hidden'); userProfile.classList.add('flex');
+                userProfile.classList.remove('hidden'); 
+                userProfile.classList.add('flex');
                 document.getElementById('user-avatar').src = currentUser.user_metadata?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=random';
                 
-                if (!isWaitingForResponse) {
-                    userInput.disabled = false; sendBtn.disabled = false;
-                    userInput.placeholder = "Ketik pesan Anda... (Tekan Enter untuk mengirim)";
-                }
+                guestSidebarWarning.classList.add('hidden');
+                guestChatBanner.classList.add('hidden');
+                
                 loadChats(); 
             } else {
+                // USER BELUM LOGIN (GUEST)
                 loginBtn.classList.remove('hidden');
-                userProfile.classList.add('hidden'); userProfile.classList.remove('flex');
-                userInput.disabled = true; sendBtn.disabled = true;
-                userInput.placeholder = "Silakan login terlebih dahulu untuk memulai chat.";
+                userProfile.classList.add('hidden'); 
+                userProfile.classList.remove('flex');
+                
+                guestSidebarWarning.classList.remove('hidden');
+                guestChatBanner.classList.remove('hidden');
                 
                 chats = []; memoryMessages = []; currentChatId = null;
-                renderSidebar(); document.getElementById('chat-container').innerHTML = '';
+                renderSidebar(); 
+                document.getElementById('chat-container').innerHTML = '';
+                
+                // Pesan sambutan opsional untuk guest mode
+                setTimeout(() => {
+                    if(!currentChatId) {
+                        appendMessage("Halo! Anda sedang berada dalam **Mode Tamu**.\n\nAnda dapat mengobrol dengan saya secara normal, namun percakapan ini akan hilang jika halaman ini ditutup. Login dengan Google di pojok kanan atas untuk menyimpan riwayat chat Anda selamanya.", false);
+                    }
+                }, 500);
             }
         }
 
@@ -432,5 +480,4 @@
     </script>
 </body>
 </html>
-
 
