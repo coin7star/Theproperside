@@ -20,53 +20,91 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .chat-msg { max-width: 90%; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: 1rem; line-height: 1.6; }
-        .msg-user { align-self: flex-end; background-color: #4f46e5; color: white; }
-        .msg-ai { align-self: flex-start; background-color: #f3f4f6; color: #1f2937; }
+        .msg-user { align-self: flex-end; background-color: #4f46e5; color: white; border-bottom-right-radius: 0.25rem; }
+        .msg-ai { align-self: flex-start; background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; }
         
         /* Perbaikan CSS untuk Code Block */
         pre { background: #282c34 !important; border-radius: 0.5rem; padding: 1rem !important; margin: 0.5rem 0; position: relative; overflow-x: auto; }
         code { font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.875rem; color: #abb2bf; display: block; overflow-x: auto; white-space: pre; }
-        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; z-index: 20; }
+        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; z-index: 20; border: none; transition: background 0.2s;}
         .copy-btn:hover { background: #374151; }
         
         #initial-loader { position: fixed; inset: 0; background: white; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* Menyembunyikan scrollbar untuk textarea tapi tetap bisa di-scroll */
+        textarea::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
 
     <div id="initial-loader">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
         <p class="text-sm text-gray-500">Menyiapkan asisten AI Anda...</p>
     </div>
 
     <header class="bg-white border-b border-gray-200 shadow-sm z-10 flex-shrink-0 opacity-0 transition-opacity duration-500" id="main-header">
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <h1 class="font-bold text-lg text-indigo-600">Multi AI Chat</h1>
+            <h1 class="font-bold text-lg text-indigo-600 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Multi AI Chat
+            </h1>
             <div class="flex items-center gap-3">
-                <select id="model-selector" class="bg-gray-50 border border-gray-300 text-xs rounded-lg p-2 cursor-pointer outline-none">
-                    <option value="gemini">Gemini 3.1</option>
+                <select id="model-selector" class="bg-gray-50 border border-gray-300 text-xs rounded-lg p-2 cursor-pointer outline-none focus:ring-1 focus:ring-indigo-500">
+                    <option value="gemini">Gemini 1.5</option>
                     <option value="groq">Groq (Llama 3)</option>
                 </select>
-                <button id="login-btn" onclick="loginGoogle()" class="hidden bg-blue-600 text-white text-xs py-1.5 px-3 rounded-lg hover:bg-blue-700 transition">Login</button>
-                <div id="user-profile" class="hidden items-center gap-2">
-                    <img id="user-avatar" src="" class="w-8 h-8 rounded-full border shadow-sm">
-                    <button onclick="logout()" class="text-gray-400 text-xs hover:text-red-500">Logout</button>
+                <button id="login-btn" onclick="loginGoogle()" class="hidden bg-indigo-600 text-white text-xs font-medium py-2 px-4 rounded-lg hover:bg-indigo-700 transition shadow-sm">Login Google</button>
+                <div id="user-profile" class="hidden items-center gap-3">
+                    <img id="user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-gray-200 shadow-sm object-cover">
+                    <button onclick="logout()" class="text-gray-500 text-xs hover:text-red-600 transition font-medium">Logout</button>
                 </div>
             </div>
         </div>
     </header>
 
-    <main id="chat-container" class="flex-1 overflow-y-auto w-full max-w-5xl mx-auto p-4 flex flex-col opacity-0 transition-opacity duration-500"></main>
+    <main id="chat-container" class="flex-1 overflow-y-auto w-full max-w-5xl mx-auto p-4 flex flex-col opacity-0 transition-opacity duration-500 scroll-smooth"></main>
 
     <footer id="main-footer" class="bg-white border-t p-3 pb-6 flex-shrink-0 opacity-0 transition-opacity duration-500">
-        <div class="max-w-5xl mx-auto relative flex items-end gap-2">
-            <textarea id="user-input" disabled class="w-full bg-gray-50 border border-gray-300 text-sm rounded-2xl p-4 pr-12 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60" placeholder="Ketik pesan Anda..."></textarea>
-            <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-3 bottom-3 p-2 bg-indigo-600 text-white rounded-full shadow-md hover:bg-indigo-700 transition">Kirim</button>
+        <div class="max-w-5xl mx-auto relative flex items-end gap-2 bg-gray-50 border border-gray-300 rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
+            <textarea id="user-input" disabled rows="1" class="w-full bg-transparent text-sm p-4 pr-14 outline-none disabled:opacity-60 resize-none max-h-32" placeholder="Ketik pesan Anda... (Tekan Enter untuk mengirim)"></textarea>
+            <button id="send-btn" disabled onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-10 w-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+            </button>
         </div>
     </footer>
 
     <script>
         window.myAppSupabase = null;
         let currentUser = null;
+        let isWaitingForResponse = false;
+
+        // PERBAIKAN 1: Konfigurasi Marked.js untuk mendukung versi terbaru (Objek Token)
+        marked.use({
+            renderer: {
+                code(token) {
+                    // Deteksi apakah library mengembalikan format Object (versi baru) atau String (versi lama)
+                    let codeText = typeof token === 'object' ? token.text : arguments[0];
+                    let lang = typeof token === 'object' ? token.lang : arguments[1];
+                    
+                    if (!codeText) codeText = '';
+                    const escapedCode = String(codeText).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    
+                    // Tombol salin sekarang tidak menggunakan onclick sebaris agar tidak dihapus DOMPurify
+                    return `<pre><button class="copy-btn bg-gray-600">Salin</button><code class="language-${lang || 'plaintext'}">${escapedCode}</code></pre>`;
+                }
+            }
+        });
+
+        // PERBAIKAN 2: Gunakan Event Listener terpusat agar DOMPurify tidak memblokir tombol klik
+        document.getElementById('chat-container').addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('copy-btn')) {
+                copyToClipboard(e.target);
+            }
+        });
 
         async function waitForSupabase() {
             return new Promise((resolve) => {
@@ -81,10 +119,25 @@
         function copyToClipboard(btn) {
             const codeBlock = btn.nextElementSibling;
             const code = codeBlock.innerText;
-            navigator.clipboard.writeText(code);
+            
+            try {
+                navigator.clipboard.writeText(code);
+            } catch (err) {
+                const textArea = document.createElement("textarea");
+                textArea.value = code;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textArea);
+            }
+            
             const originalText = btn.innerText;
             btn.innerText = 'Tersalin!';
-            setTimeout(() => btn.innerText = originalText, 2000);
+            btn.classList.replace('bg-gray-600', 'bg-green-600');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.replace('bg-green-600', 'bg-gray-600');
+            }, 2000);
         }
 
         function appendMessage(text, isUser) {
@@ -92,16 +145,19 @@
             const div = document.createElement('div');
             div.className = `chat-msg ${isUser ? 'msg-user' : 'msg-ai'}`;
             
-            const renderer = new marked.Renderer();
-            renderer.code = (code, lang) => {
-                const escapedCode = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                return `<pre><button class="copy-btn" onclick="copyToClipboard(this)">Salin</button><code>${escapedCode}</code></pre>`;
-            };
+            if (isUser) {
+                div.textContent = text;
+            } else {
+                // Konversi AI markdown ke HTML lalu bersihkan via DOMPurify
+                div.innerHTML = DOMPurify.sanitize(marked.parse(text));
+            }
             
-            div.innerHTML = DOMPurify.sanitize(marked.parse(text, { renderer }));
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
-            hljs.highlightAll();
+            
+            div.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
         }
 
         function handleAuthState(session) {
@@ -114,39 +170,57 @@
             if (currentUser) {
                 loginBtn.classList.add('hidden');
                 userProfile.classList.remove('hidden');
-                document.getElementById('user-avatar').src = currentUser.user_metadata?.avatar_url || '';
-                userInput.disabled = false;
-                sendBtn.disabled = false;
+                userProfile.classList.add('flex');
+                document.getElementById('user-avatar').src = currentUser.user_metadata?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=random';
+                
+                if (!isWaitingForResponse) {
+                    userInput.disabled = false;
+                    sendBtn.disabled = false;
+                    userInput.placeholder = "Ketik pesan Anda... (Tekan Enter untuk mengirim)";
+                }
             } else {
                 loginBtn.classList.remove('hidden');
                 userProfile.classList.add('hidden');
+                userProfile.classList.remove('flex');
                 userInput.disabled = true;
                 sendBtn.disabled = true;
+                userInput.placeholder = "Silakan login terlebih dahulu untuk memulai chat.";
             }
         }
 
         async function loginGoogle() {
             if (!window.myAppSupabase) return;
-            await window.myAppSupabase.auth.signInWithOAuth({ 
-                provider: 'google',
-                options: { redirectTo: window.location.origin }
-            });
+            try {
+                await window.myAppSupabase.auth.signInWithOAuth({ 
+                    provider: 'google',
+                    options: { redirectTo: window.location.origin }
+                });
+            } catch (error) {
+                alert("Gagal memanggil antarmuka login: " + error.message);
+            }
         }
 
         async function logout() {
             if (!window.myAppSupabase) return;
             await window.myAppSupabase.auth.signOut();
+            document.getElementById('chat-container').innerHTML = ''; 
         }
 
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const modelSelector = document.getElementById('model-selector');
+            const sendBtn = document.getElementById('send-btn');
             const text = input.value.trim();
-            if(!text) return;
             
+            if(!text || isWaitingForResponse) return;
+            
+            isWaitingForResponse = true;
             appendMessage(text, true);
             input.value = '';
+            input.style.height = 'auto'; 
             input.disabled = true;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<div class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>';
 
             try {
                 const response = await fetch('/api/chat', {
@@ -155,19 +229,39 @@
                     body: JSON.stringify({ text, modelProvider: modelSelector.value })
                 });
 
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                
                 const data = await response.json();
+                
                 if (data.reply) {
                     appendMessage(data.reply, false);
                 } else {
-                    appendMessage("Error: " + (data.error || "Terjadi kesalahan."), false);
+                    appendMessage("Error: " + (data.error || "Terjadi kesalahan pada server AI."), false);
                 }
             } catch (err) {
-                appendMessage("Gagal terhubung ke server AI: " + err.message, false);
+                appendMessage("⚠️ Gagal terhubung ke server. Pastikan Anda memiliki endpoint backend /api/chat yang aktif. Detail: " + err.message, false);
             } finally {
+                isWaitingForResponse = false;
                 input.disabled = false;
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>';
                 input.focus();
             }
         }
+
+        const userInput = document.getElementById('user-input');
+
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); 
+                sendMessage();
+            }
+        });
 
         async function initApp() {
             try {
@@ -180,14 +274,16 @@
                     const { data: { session } } = await window.myAppSupabase.auth.getSession();
                     handleAuthState(session);
                     window.myAppSupabase.auth.onAuthStateChange((_, session) => handleAuthState(session));
+                } else {
+                    document.getElementById('user-input').placeholder = "Kredensial Supabase belum dikonfigurasi.";
                 }
-
+            } catch (err) {
+                console.error("Gagal menginisialisasi Supabase:", err);
+            } finally {
                 document.getElementById('initial-loader').style.display = 'none';
                 document.getElementById('main-header').classList.remove('opacity-0');
                 document.getElementById('chat-container').classList.remove('opacity-0');
                 document.getElementById('main-footer').classList.remove('opacity-0');
-            } catch (err) {
-                console.error(err);
             }
         }
         
@@ -195,3 +291,4 @@
     </script>
 </body>
 </html>
+
