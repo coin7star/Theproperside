@@ -147,7 +147,6 @@
         <!-- HALAMAN 2: MULTI AI CHAT (CHAT PAGE)       -->
         <!-- ========================================== -->
         <div id="page-chat" class="page-transition absolute inset-0 w-full h-full bg-white flex opacity-0 pointer-events-none translate-x-10">
-            <!-- (Sama dengan versi sebelumnya) -->
             <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-30 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
             <aside id="sidebar" class="w-72 bg-gray-900 text-gray-300 flex flex-col shrink-0 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-40 border-r border-gray-800">
@@ -162,7 +161,7 @@
                 </div>
                 <div class="p-3 shrink-0">
                     <button onclick="handleNewChatClick()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 px-4 rounded-xl transition shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Chat Baru
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg Chat Baru
                     </button>
                 </div>
                 <div id="chat-list" class="flex-1 overflow-y-auto p-3 pt-0 space-y-1 custom-scrollbar"></div>
@@ -224,7 +223,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
                             </div>
-                            <input type="text" id="temp-email-address" readonly value="menunggu_generate@domain.com" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-gray-50 text-gray-800 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors text-center sm:text-left">
+                            <input type="text" id="temp-email-address" readonly value="klik_baru@domain.com" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-gray-50 text-gray-800 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors text-center sm:text-left">
                         </div>
                         <div class="flex items-center gap-2 w-full sm:w-auto">
                             <button id="btn-copy-email" onclick="copyTempEmail()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white font-medium py-3 px-5 rounded-xl transition shadow-sm">
@@ -285,14 +284,11 @@
             pages.forEach(id => {
                 const el = document.getElementById(id);
                 if (id === pageId) {
-                    // Munculkan halaman yang dipilih
                     el.classList.remove('opacity-0', 'pointer-events-none', id === 'page-home' ? '-translate-x-10' : 'translate-x-10');
                     el.classList.add('opacity-100', 'translate-x-0');
                 } else {
-                    // Sembunyikan halaman lainnya
                     el.classList.remove('opacity-100', 'translate-x-0');
                     el.classList.add('opacity-0', 'pointer-events-none');
-                    
                     if (pageId === 'page-home') {
                          el.classList.add('translate-x-10');
                          el.classList.remove('-translate-x-10');
@@ -322,7 +318,6 @@
             }
         }
 
-        // --- LOGIKA UI UMUM & DROPDOWN ---
         function toggleDropdown() {
             const dropdown = document.getElementById('user-dropdown');
             dropdown.classList.toggle('hidden');
@@ -338,10 +333,11 @@
 
 
         // ==========================================
-        //  LOGIKA SKELETON: TEMP EMAIL API (UNTUK ANDA)
+        //  LOGIKA INTEGRASI: TEMP EMAIL API
         // ==========================================
-        
-        // 1. Fungsi untuk me-request email sementara baru dari API Anda
+        let tempEmailToken = "";
+
+        // 1. Fungsi untuk request email sementara
         async function generateNewEmail() {
             const emailInput = document.getElementById('temp-email-address');
             const inboxList = document.getElementById('email-inbox-list');
@@ -349,26 +345,25 @@
             
             emailInput.value = "Menghasilkan email...";
             
-            // TODO: Masukkan logika fetch() ke API Temp Email Anda di sini
-            /*
-               try {
-                   let response = await fetch('https://api-temp-email-anda.com/generate');
-                   let data = await response.json();
-                   emailInput.value = data.emailAddress;
-               } catch (e) {
-                   emailInput.value = "Gagal membuat email!";
-               }
-            */
-
-            // Dummy Simulasi
-            setTimeout(() => {
-                const randomString = Math.random().toString(36).substring(2, 8);
-                emailInput.value = `${randomString}@theproperside.mail.com`;
+            try {
+                const response = await fetch('https://bintangapi.full.diskon.cloud/api/tempmail/create/');
+                const data = await response.json();
                 
-                // Bersihkan inbox saat email baru dibuat
-                inboxList.innerHTML = '';
-                inboxList.appendChild(emptyState);
-            }, 1000);
+                // Menangani format kembalian API
+                if (data.status === true && data.result && data.result.data) {
+                    emailInput.value = data.result.data.email;
+                    tempEmailToken = data.result.data.email_token; // Simpan token untuk cek inbox
+                    
+                    // Bersihkan inbox saat email baru dibuat
+                    inboxList.innerHTML = '';
+                    inboxList.appendChild(emptyState);
+                } else {
+                    emailInput.value = "Gagal membuat email!";
+                }
+            } catch (e) {
+                console.error("Error API:", e);
+                emailInput.value = "Gagal terhubung ke API TempMail";
+            }
         }
 
         // 2. Fungsi untuk Copy Alamat Email
@@ -376,7 +371,7 @@
             const emailInput = document.getElementById('temp-email-address');
             const btnCopy = document.getElementById('btn-copy-email');
             
-            if(!emailInput.value || emailInput.value.includes("Menghasilkan")) return;
+            if(!emailInput.value || emailInput.value.includes("Menghasilkan") || emailInput.value.includes("klik_baru")) return;
             
             try {
                 navigator.clipboard.writeText(emailInput.value);
@@ -395,57 +390,70 @@
             }, 2000);
         }
 
-        // 3. Fungsi untuk Cek/Refresh Inbox dari API Anda
+        // 3. Fungsi untuk Cek/Refresh Inbox
         async function refreshInbox() {
             const btnRefresh = document.getElementById('btn-refresh-inbox');
             const inboxList = document.getElementById('email-inbox-list');
             const emptyState = document.getElementById('inbox-empty-state');
-            const currentEmail = document.getElementById('temp-email-address').value;
             
+            if (!tempEmailToken) {
+                alert("Silakan klik 'Baru' untuk mendapatkan email terlebih dahulu!");
+                return;
+            }
+
             // Putar icon refresh
             btnRefresh.querySelector('svg').classList.add('animate-spin');
             
-            // TODO: Masukkan logika fetch() ke API Inbox Anda di sini berdasarkan currentEmail
-            /*
-               try {
-                   let response = await fetch(`https://api-temp-email-anda.com/inbox?email=${currentEmail}`);
-                   let emails = await response.json();
-                   
-                   if(emails.length > 0) {
-                        // Render daftar email...
-                   }
-               } catch (e) {
-                   console.error(e);
-               }
-            */
-
-            // Dummy Simulasi (Hapus ini nanti setelah API Anda dipasang)
-            setTimeout(() => {
+            try {
+                const response = await fetch(`https://bintangapi.full.diskon.cloud/api/tempmail/check/?token=${tempEmailToken}`);
+                const data = await response.json();
+                
                 btnRefresh.querySelector('svg').classList.remove('animate-spin');
-                
-                // Contoh merender satu list email
-                if (emptyState && inboxList.contains(emptyState)) {
-                    inboxList.removeChild(emptyState);
-                }
-                
-                const dummyEmailHTML = `
-                    <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0">
-                        <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
-                            I
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-start mb-1">
-                                <h4 class="text-sm font-bold text-gray-900 truncate">Instagram</h4>
-                                <span class="text-xs text-gray-500 whitespace-nowrap ml-2">Baru saja</span>
-                            </div>
-                            <p class="text-sm text-gray-800 font-medium truncate">Kode Konfirmasi Anda: 812934</p>
-                            <p class="text-xs text-gray-500 truncate mt-0.5">Selesaikan pendaftaran Anda dengan memasukkan kode berikut...</p>
-                        </div>
-                    </div>
-                `;
-                inboxList.insertAdjacentHTML('afterbegin', dummyEmailHTML);
 
-            }, 1000);
+                // Beradaptasi menangkap array list email dari API
+                let emails = [];
+                if (data.result && Array.isArray(data.result)) emails = data.result;
+                else if (data.data && Array.isArray(data.data)) emails = data.data;
+                else if (Array.isArray(data)) emails = data;
+
+                if (emails.length > 0) {
+                    inboxList.innerHTML = ''; // Hapus state kosong
+                    
+                    emails.forEach(email => {
+                        // Menangani variasi keys output dari API (sender/from, subject, dll)
+                        const sender = email.from || email.sender || email.from_name || "Pengirim Tidak Diketahui";
+                        const subject = email.subject || "Tanpa Subjek";
+                        const snippet = email.text || email.body || email.snippet || "Silakan buka untuk membaca pesan penuh...";
+                        const date = email.date || email.created_at || "Baru saja";
+                        const initial = sender.charAt(0).toUpperCase();
+                        
+                        const emailHTML = `
+                            <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="alert('Isi pesan:\\n\\n${snippet.replace(/"/g, '&quot;')}')">
+                                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
+                                    ${initial}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <h4 class="text-sm font-bold text-gray-900 truncate">${sender}</h4>
+                                        <span class="text-xs text-gray-500 whitespace-nowrap ml-2">${date}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-800 font-medium truncate">${subject}</p>
+                                    <p class="text-xs text-gray-500 truncate mt-0.5">${snippet}</p>
+                                </div>
+                            </div>
+                        `;
+                        inboxList.insertAdjacentHTML('beforeend', emailHTML);
+                    });
+                } else {
+                    // Jika belum ada pesan masuk, tetap tunjukkan state kosong
+                    inboxList.innerHTML = '';
+                    inboxList.appendChild(emptyState);
+                }
+            } catch (e) {
+                console.error("Error Cek Inbox:", e);
+                btnRefresh.querySelector('svg').classList.remove('animate-spin');
+                alert("Gagal menyinkronkan kotak masuk.");
+            }
         }
 
 
