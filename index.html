@@ -413,39 +413,30 @@
                 
                 btnRefresh.querySelector('svg').classList.remove('animate-spin');
 
-                // Deteksi dinamis untuk mengekstrak array email dari struktur JSON API
+                // PERBAIKAN: Menargetkan langsung ke array "messages" sesuai struktur JSON API Anda
                 let emails = [];
-                if (data.result) {
-                    if (Array.isArray(data.result)) {
-                        emails = data.result;
-                    } else if (data.result.data && Array.isArray(data.result.data)) {
-                        emails = data.result.data; 
-                    } else if (typeof data.result === 'object' && !Array.isArray(data.result)) {
-                        // Antisipasi jika kembalian berupa object tunggal (1 email) atau pesan error
-                        emails = [data.result];
-                    }
-                } else if (data.data && Array.isArray(data.data)) {
-                    emails = data.data;
-                } else if (Array.isArray(data)) {
-                    emails = data;
+                if (data.result && data.result.data && Array.isArray(data.result.data.messages)) {
+                    emails = data.result.data.messages;
+                } else if (data.result && Array.isArray(data.result)) {
+                    emails = data.result;
+                } else if (data.result && data.result.data && Array.isArray(data.result.data)) {
+                    emails = data.result.data; 
                 }
 
-                // Cek apakah data valid dan memang berisi email (bukan pesan "inbox kosong")
-                const isValidInbox = Array.isArray(emails) && emails.length > 0 && (emails[0].subject || emails[0].from || emails[0].sender);
-
-                if (isValidInbox) {
+                // Cek apakah ada pesan masuk (array lebih dari 0)
+                if (emails.length > 0) {
                     inboxList.innerHTML = ''; // Hapus tampilan kotak kosong
                     
                     emails.forEach(email => {
-                        // Ekstrak data berdasarkan variasi nama kunci (key) umum dari API TempMail
+                        // Ekstrak data (menyesuaikan format output pesan yang biasa dipakai API Temp Mail)
                         const sender = email.from || email.sender || email.from_name || email.fromAddress || "Pengirim Tidak Diketahui";
                         const subject = email.subject || "Tanpa Subjek";
-                        const snippet = email.text || email.body || email.textBody || email.snippet || "Buka untuk membaca detail pesan...";
+                        const snippet = email.text || email.body || email.textBody || email.snippet || email.body_text || "Buka untuk membaca detail pesan...";
                         const date = email.date || email.created_at || email.receivedAt || "Baru saja";
                         const initial = sender.charAt(0).toUpperCase();
                         
                         // Bersihkan teks dari kutip dan enter agar tidak merusak fungsi onClick (Alert)
-                        const safeSnippet = snippet.replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "");
+                        const safeSnippet = String(snippet).replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "");
                         
                         const emailHTML = `
                             <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="alert('${safeSnippet}')">
