@@ -49,7 +49,7 @@
         .page-transition { transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; }
     </style>
 </head>
-<body class="flex flex-col h-[100dvh] bg-gray-50 overflow-hidden font-sans">
+<body class="flex flex-col h-[100dvh] bg-gray-50 overflow-hidden font-sans relative">
 
     <!-- Loader Awal -->
     <div id="initial-loader">
@@ -58,7 +58,7 @@
     </div>
 
     <!-- HEADER GLOBAL (Navigasi Atas) -->
-    <header class="bg-white border-b border-gray-200 shadow-sm z-50 flex-shrink-0 h-[64px] flex items-center justify-between px-4 sm:px-6 relative">
+    <header class="bg-white border-b border-gray-200 shadow-sm z-40 flex-shrink-0 h-[64px] flex items-center justify-between px-4 sm:px-6 relative">
         <div class="flex items-center gap-3">
             <button id="btn-back-home" onclick="openPage('page-home')" class="hidden p-2 -ml-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors focus:outline-none">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -262,6 +262,44 @@
 
     </div>
 
+    <!-- ========================================== -->
+    <!-- JENDELA POP-UP BACA EMAIL (MODAL)          -->
+    <!-- ========================================== -->
+    <div id="email-read-modal" class="fixed inset-0 bg-gray-900/80 z-[9999] hidden flex-col items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+        <div id="email-read-content" class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full transform scale-95 transition-transform duration-300 overflow-hidden">
+            
+            <!-- Header Modal (Tombol Tutup & Subjek) -->
+            <div class="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 shrink-0">
+                <h3 class="font-bold text-gray-800 text-lg truncate pr-4" id="modal-subject">Memuat Subjek...</h3>
+                <button onclick="closeEmailModal()" class="text-gray-400 hover:text-gray-700 bg-gray-200/50 hover:bg-gray-200 p-2 rounded-full transition focus:outline-none shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Info Pengirim Email -->
+            <div class="p-4 sm:p-5 border-b border-gray-100 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold text-xl shrink-0" id="modal-initial">
+                        M
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-gray-900 truncate" id="modal-sender">Memuat Pengirim...</p>
+                        <p class="text-sm text-gray-500 mt-0.5" id="modal-date">Memuat Tanggal...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Isi Pesan Email (Bisa di-scroll) -->
+            <div class="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-white relative">
+                <div id="modal-body" class="text-gray-800 text-sm sm:text-base leading-relaxed break-words whitespace-pre-wrap">
+                    <!-- Konten Email akan dimuat di sini -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
     <script>
         window.myAppSupabase = null;
         let currentUser = null;
@@ -329,6 +367,7 @@
         //  LOGIKA INTEGRASI: TEMP EMAIL API
         // ==========================================
         let tempEmailToken = "";
+        let currentInboxEmails = []; // Menyimpan data utuh email masuk
 
         // Fungsi request email sementara & simpan profil otomatis
         async function generateNewEmail() {
@@ -349,19 +388,17 @@
                     emailInput.value = newEmailAddress;
                     tempEmailToken = newEmailToken;
                     
-                    // -- LOGIKA MENYIMPAN KE AKUN (ATAU LOCALSTORAGE JIKA GUEST) --
                     if (currentUser && window.myAppSupabase) {
-                        // Simpan ke User Metadata di Supabase agar awet ditiap device
                         await window.myAppSupabase.auth.updateUser({
                             data: { temp_email: newEmailAddress, temp_email_token: newEmailToken }
                         });
                     } else {
-                        // Fallback: Simpan ke storage memori lokal jika Guest
                         localStorage.setItem('guest_temp_email', JSON.stringify({ email: newEmailAddress, token: newEmailToken }));
                     }
                     
                     inboxList.innerHTML = '';
                     inboxList.appendChild(emptyState);
+                    currentInboxEmails = []; // Kosongkan riwayat lokal saat email diganti
                 } else {
                     emailInput.value = "Gagal membuat email!";
                 }
@@ -422,27 +459,23 @@
                 }
 
                 if (emails.length > 0) {
+                    currentInboxEmails = emails; // Simpan ke variabel global untuk dibaca modal pop-up
                     inboxList.innerHTML = ''; 
                     
-                    emails.forEach(email => {
-                        // Logging untuk debugging (sementara) - Anda bisa hapus ini nanti jika sudah stabil
-                        console.log("Struktur Email yang diterima:", email);
-                        
-                        // Menangani variasi keys output dari API (sender/from, subject, dll)
+                    emails.forEach((email, index) => {
+                        console.log("Menerima Email Object:", email); // Fitur log untuk dev
+
                         const sender = email.from || email.sender || email.from_name || email.fromAddress || "Pengirim Tidak Diketahui";
                         const subject = email.subject || "Tanpa Subjek";
                         
-                        // Coba ambil isi email dari berbagai kemungkinan nama variabel yang sering dipakai API Temp Mail
-                        const snippet = email.text || email.body || email.textBody || email.snippet || email.body_text || email.html || "Pesan ini tidak memiliki isi teks yang terbaca (mungkin format HTML kompleks).";
-                        
+                        // Ekstraksi untuk pratinjau list (hanya text/snippet pendek)
+                        const previewSnippet = email.text || email.snippet || email.body_text || email.textBody || email.body || "Buka untuk membaca isi pesan...";
                         const date = email.date || email.created_at || email.receivedAt || "Baru saja";
                         const initial = sender.charAt(0).toUpperCase();
                         
-                        // Bersihkan string snippet dari karakter yang merusak alert() JavaScript
-                        const safeSnippet = String(snippet).replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "");
-                        
+                        // Sekarang onclick akan memanggil Modal, bukan Alert
                         const emailHTML = `
-                            <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="alert('Dari: ${sender}\\nSubjek: ${subject}\\n\\nIsi Pesan:\\n${safeSnippet}')">
+                            <div class="p-4 sm:p-5 hover:bg-gray-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 border-b border-gray-100 last:border-0" onclick="openEmailModal(${index})">
                                 <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold">
                                     ${initial}
                                 </div>
@@ -452,13 +485,14 @@
                                         <span class="text-xs text-gray-500 whitespace-nowrap ml-2">${date}</span>
                                     </div>
                                     <p class="text-sm text-gray-800 font-medium truncate">${subject}</p>
-                                    <p class="text-xs text-gray-500 truncate mt-0.5">${snippet.substring(0, 100)}${snippet.length > 100 ? '...' : ''}</p>
+                                    <p class="text-xs text-gray-500 truncate mt-0.5">${String(previewSnippet).substring(0, 100)}...</p>
                                 </div>
                             </div>
                         `;
                         inboxList.insertAdjacentHTML('beforeend', emailHTML);
                     });
                 } else {
+                    currentInboxEmails = [];
                     inboxList.innerHTML = '';
                     inboxList.appendChild(emptyState);
                 }
@@ -467,6 +501,61 @@
                 btnRefresh.querySelector('svg').classList.remove('animate-spin');
                 alert("Gagal menyinkronkan kotak masuk.");
             }
+        }
+
+        // FUNGSI UNTUK MEMBUKA JENDELA EMAIL (MODAL)
+        function openEmailModal(index) {
+            const email = currentInboxEmails[index];
+            if (!email) return;
+
+            const sender = email.from || email.sender || email.from_name || email.fromAddress || "Pengirim Tidak Diketahui";
+            const subject = email.subject || "Tanpa Subjek";
+            const date = email.date || email.created_at || email.receivedAt || "Baru saja";
+            const initial = sender.charAt(0).toUpperCase();
+
+            // Ekstraksi Body (Memprioritaskan HTML jika ada, lalu fallback ke text biasa)
+            const bodyContent = email.html || email.body_html || email.text || email.body || email.textBody || email.content || "<i>Isi pesan tidak ditemukan atau tidak didukung formatnya.</i>";
+
+            // Masukkan data ke dalam Elemen Modal
+            document.getElementById('modal-subject').textContent = subject;
+            document.getElementById('modal-sender').textContent = sender;
+            document.getElementById('modal-date').textContent = date;
+            document.getElementById('modal-initial').textContent = initial;
+
+            // Masukkan Body dengan menggunakan DOMPurify agar aman dari injeksi script nakal
+            document.getElementById('modal-body').innerHTML = DOMPurify.sanitize(bodyContent);
+
+            // Tampilkan Modal dengan animasi
+            const modal = document.getElementById('email-read-modal');
+            const modalContent = document.getElementById('email-read-content');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Beri jeda sangat kecil agar transisi opacity & transform Tailwind berjalan mulus
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        // FUNGSI UNTUK MENUTUP JENDELA EMAIL
+        function closeEmailModal() {
+            const modal = document.getElementById('email-read-modal');
+            const modalContent = document.getElementById('email-read-content');
+
+            // Jalankan animasi keluar
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+
+            // Sembunyikan elemen setelah animasi selesai (300ms)
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.getElementById('modal-body').innerHTML = ''; // Bersihkan memori isi pesan
+            }, 300);
         }
 
 
