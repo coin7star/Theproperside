@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -23,15 +24,31 @@
         .msg-user { align-self: flex-end; background-color: #4f46e5; color: white; border-bottom-right-radius: 0.25rem; }
         .msg-ai { align-self: flex-start; background-color: #f3f4f6; color: #1f2937; border-bottom-left-radius: 0.25rem; }
         
-        /* Perbaikan CSS untuk Code Block */
-        pre { background: #282c34 !important; border-radius: 0.5rem; padding: 1rem !important; margin: 0.5rem 0; position: relative; overflow-x: auto; }
-        code { font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.875rem; color: #abb2bf; display: block; overflow-x: auto; white-space: pre; }
-        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; z-index: 20; border: none; transition: background 0.2s;}
+        /* Perbaikan CSS untuk Code Block agar bisa di-scroll */
+        .code-container { position: relative; margin: 0.75rem 0; }
+        pre { 
+            background: #282c34 !important; 
+            border-radius: 0.5rem; 
+            padding: 1rem !important; 
+            padding-top: 2.5rem !important; /* Ruang untuk tombol salin */
+            margin: 0; 
+            overflow: auto; 
+            max-height: 400px; /* Batasan tinggi maksimal (muncul scroll jika lewat) */
+        }
+        code { font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.875rem; color: #abb2bf; display: block; white-space: pre; }
+        
+        /* Styling Tombol Salin agar tetap di atas saat di-scroll */
+        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #4b5563; color: white; padding: 0.25rem 0.5rem; font-size: 0.7rem; border-radius: 0.25rem; cursor: pointer; z-index: 10; border: none; transition: background 0.2s;}
         .copy-btn:hover { background: #374151; }
+        
+        /* Custom Scrollbar agar terlihat lebih rapi di dalam kotak kode */
+        pre::-webkit-scrollbar { width: 6px; height: 6px; }
+        pre::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        pre::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        pre::-webkit-scrollbar-thumb:hover { background: #6b7280; }
         
         #initial-loader { position: fixed; inset: 0; background: white; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
-        /* Menyembunyikan scrollbar untuk textarea tapi tetap bisa di-scroll */
         textarea::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
@@ -82,24 +99,24 @@
         let currentUser = null;
         let isWaitingForResponse = false;
 
-        // PERBAIKAN 1: Konfigurasi Marked.js untuk mendukung versi terbaru (Objek Token)
+        // Membungkus blok kode dengan container agar tombol salin tetap melayang saat di-scroll
         marked.use({
             renderer: {
                 code(token) {
-                    // Deteksi apakah library mengembalikan format Object (versi baru) atau String (versi lama)
                     let codeText = typeof token === 'object' ? token.text : arguments[0];
                     let lang = typeof token === 'object' ? token.lang : arguments[1];
                     
                     if (!codeText) codeText = '';
                     const escapedCode = String(codeText).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     
-                    // Tombol salin sekarang tidak menggunakan onclick sebaris agar tidak dihapus DOMPurify
-                    return `<pre><button class="copy-btn bg-gray-600">Salin</button><code class="language-${lang || 'plaintext'}">${escapedCode}</code></pre>`;
+                    return `<div class="code-container">
+                                <button class="copy-btn bg-gray-600">Salin</button>
+                                <pre><code class="language-${lang || 'plaintext'}">${escapedCode}</code></pre>
+                            </div>`;
                 }
             }
         });
 
-        // PERBAIKAN 2: Gunakan Event Listener terpusat agar DOMPurify tidak memblokir tombol klik
         document.getElementById('chat-container').addEventListener('click', function(e) {
             if (e.target && e.target.classList.contains('copy-btn')) {
                 copyToClipboard(e.target);
@@ -117,8 +134,9 @@
         }
 
         function copyToClipboard(btn) {
-            const codeBlock = btn.nextElementSibling;
-            const code = codeBlock.innerText;
+            // Mencari elemen <code> yang ada di dalam <pre> di sebelah tombol
+            const codeBlock = btn.nextElementSibling.querySelector('code');
+            const code = codeBlock.textContent || codeBlock.innerText;
             
             try {
                 navigator.clipboard.writeText(code);
@@ -148,7 +166,6 @@
             if (isUser) {
                 div.textContent = text;
             } else {
-                // Konversi AI markdown ke HTML lalu bersihkan via DOMPurify
                 div.innerHTML = DOMPurify.sanitize(marked.parse(text));
             }
             
@@ -291,4 +308,3 @@
     </script>
 </body>
 </html>
-
