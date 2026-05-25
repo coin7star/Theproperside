@@ -3,8 +3,7 @@ export async function onRequestPost(context) {
         const { request, env } = context;
         const body = await request.json();
         
-        // Membaca array 'messages' dari frontend, bukan lagi hanya 'text'
-        // Jika frontend belum mengirim array, kita buat fallback
+        // Membaca array 'messages' dari frontend, jika tidak ada gunakan fallback
         const messages = body.messages || [
             { role: "system", content: "Anda adalah asisten AI yang ramah dan pintar." },
             { role: "user", content: body.text }
@@ -21,7 +20,7 @@ export async function onRequestPost(context) {
                 },
                 body: JSON.stringify({
                     model: "llama-3.1-8b-instant",
-                    messages: messages // Mengirim seluruh memori chat ke Groq
+                    messages: messages
                 })
             });
             const data = await response.json();
@@ -30,10 +29,8 @@ export async function onRequestPost(context) {
             });
 
         } else {
-            // Logika untuk Gemini
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`;
             
-            // Gemini membutuhkan format konten yang sedikit berbeda
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -53,22 +50,3 @@ export async function onRequestPost(context) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
     }
 }
-```
-
-### Penting untuk Anda lakukan di Cloudflare Dashboard:
-
-1.  **Environment Variables (Rahasia API Key):**
-    Di dashboard Cloudflare Pages, buka **Settings > Functions > Environment Variables**.
-    * Tambahkan `GEMINI_API_KEY` (isi dengan API Key Anda).
-    * Tambahkan `GROQ_API_KEY` (isi dengan API Key Anda).
-    *(Ini menggantikan file `.env` di Vercel).*
-
-2.  **Penyesuaian `index.html`:**
-    Karena sekarang backend-nya pintar dan sudah menerima array `messages`, ubah sedikit fungsi `sendMessage` di `index.html` Anda. Jangan kirim `text` lagi, tapi kirim `messages`:
-
-    ```javascript
-    // Ganti bagian body di sendMessage() menjadi:
-    body: JSON.stringify({ 
-        messages: currentConversation, // Kirim seluruh array memori
-        modelProvider: modelSelector.value 
-    })
